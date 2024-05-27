@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 @file myactuator_rmd_simulation_control.launch.py
 @brief
