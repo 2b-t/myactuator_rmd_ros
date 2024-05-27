@@ -21,6 +21,16 @@
                                              radius_1 height_1
                                              radius_2 height_2
                                              radius_3 height_3 mass">
+    
+    <!-- Compute the inertial properties of the different parts of the actuator assuming uniform density -->
+    <xacro:property name="volume_1" value="${radius_1*radius_1*pi*height_1}"/>
+    <xacro:property name="volume_2" value="${radius_2*radius_2*pi*height_2}"/>
+    <xacro:property name="volume_3" value="${radius_3*radius_3*pi*height_3}"/>
+    <xacro:property name="volume_1_2_3" value="${volume_1+volume_2+volume_3}"/>
+    <xacro:property name="mass_1" value="${volume_1/volume_1_2_3*mass}"/>
+    <xacro:property name="mass_2" value="${volume_2/volume_1_2_3*mass}"/>
+    <xacro:property name="mass_3" value="${volume_3/volume_1_2_3*mass}"/>
+
     <link name="${name}">
       <visual>
         <geometry>
@@ -33,29 +43,8 @@
           <cylinder length="${height_1}" radius="${radius_1}"/>
         </geometry>
       </collision>
-      <collision>
-        <origin xyz="0 0 ${height_1 + height_2/2}" rpy="0 0 0"/>
-        <geometry>
-          <cylinder length="${height_2}" radius="${radius_2}"/>
-        </geometry>
-      </collision>
-      <collision>
-        <origin xyz="0 0 ${height_1 + height_2 + height_3/2}" rpy="0 0 0"/>
-        <geometry>
-          <cylinder length="${height_3}" radius="${radius_3}"/>
-        </geometry>
-      </collision>
-      <!-- Estimate the center of gravity assuming symmetry and equal density -->
-      <xacro:property name="volume_1" value="${radius_1*radius_1*pi*height_1}"/>
-      <xacro:property name="volume_2" value="${radius_2*radius_2*pi*height_2}"/>
-      <xacro:property name="volume_3" value="${radius_3*radius_3*pi*height_3}"/>
-      <xacro:property name="total_volume" value="${volume_1 + volume_2 + volume_3}"/>
-      <xacro:property name="momentum_1" value="${volume_1*height_1/2}"/>
-      <xacro:property name="momentum_2" value="${volume_2*(height_1 + height_2/2)}"/>
-      <xacro:property name="momentum_3" value="${volume_3*(height_1 + height_2 + height_3/2)}"/>
-      <xacro:property name="center_of_gravity" value="${(momentum_1 + momentum_2 + momentum_3)/total_volume}"/>
-      <xacro:cylinder_inertial m="${mass}" x="0" y="0" z="${center_of_gravity}" 
-                               radius="${radius_2}" height="${height_2}"/>
+      <xacro:cylinder_inertial m="${mass_1}" x="0" y="0" z="${height_1/2}" 
+                               radius="${radius_1}" height="${height_1}"/>
     </link>
 
     <joint name="${parent_link}_to_${name}" type="fixed">
@@ -64,14 +53,48 @@
       <child link="${name}" />
     </joint>
 
-    <joint name="${joint_name}" type="revolute">
-      <origin xyz="0 0 ${height_1 + height_2 + height_3}" rpy="0 0 0" />
+    <link name="${name}_body">
+      <collision>
+        <origin xyz="0 0 ${height_2/2}" rpy="0 0 0"/>
+        <geometry>
+          <cylinder length="${height_2}" radius="${radius_2}"/>
+        </geometry>
+      </collision>
+      <xacro:cylinder_inertial m="${mass_2}" x="0" y="0" z="${height_2/2}" 
+                               radius="${radius_2}" height="${height_2}"/>
+    </link>
+
+    <joint name="${name}_to_${name}_body" type="fixed">
+      <origin xyz="0 0 ${height_1}" rpy="0 0 0" />
       <parent link="${name}" />
-      <child link="${child_link}" />
-      <axis xyz="0 0 1"/>
-      <limit effort="87" lower="-2.8973" upper="2.8973" velocity="2.1750"/>
+      <child link="${name}_body" />
     </joint>
-    
+
+    <link name="${name}_shaft">
+      <collision>
+        <origin xyz="0 0 ${height_3/2}" rpy="0 0 0"/>
+        <geometry>
+          <cylinder length="${height_3}" radius="${radius_3}"/>
+        </geometry>
+      </collision>
+      <xacro:cylinder_inertial m="${mass_3}" x="0" y="0" z="${height_3/2}" 
+                               radius="${radius_3}" height="${height_3}"/>
+    </link>
+
+    <joint name="${joint_name}" type="revolute">
+      <origin xyz="0 0 ${height_2}" rpy="0 0 0" />
+      <parent link="${name}_body" />
+      <child link="${name}_shaft" />
+      <axis xyz="0 0 1"/>
+      <limit effort="87" lower="${-pi}" upper="${pi}" velocity="2.0"/>
+    </joint>
+
+    <joint name="${name}_to_${name}_shaft" type="fixed">
+      <origin xyz="0 0 ${height_3}" rpy="0 0 0" />
+      <parent link="${name}_shaft" />
+      <child link="${child_link}" />
+    </joint>
+
     <!-- ros2_control configuration -->
     <xacro:myactuator_rmd_ros2_control name="${joint_name}_ros2_control" joint_name="${joint_name}" simulation="${simulation}"
                                        ifname="${ifname}" actuator_id="${actuator_id}"/>
