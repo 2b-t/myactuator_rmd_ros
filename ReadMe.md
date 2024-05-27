@@ -7,7 +7,7 @@ Author: [Tobit Flatscher](https://github.com/2b-t) (2024)
 
 
 ## Overview
-This repository holds the **URDF models** and [**`ros2_control` integration**](https://control.ros.org/humble/index.html) for the [**MyActuator RMD X actuator series**](https://www.myactuator.com/rmd-x). The CAD models for the URDF models were obtained from the [offical MyActuator RMD web page](https://www.myactuator.com/downloads-x-series). The hardware interface is based on the [C++ driver that I have written for these actuators](https://github.com/2b-t/myactuator_rmd). You will need to clone both of the repositories to your ROS 2 workspace and [follow these instructions for installing its dependencies](https://github.com/2b-t/myactuator_rmd/blob/main/ReadMe.md):
+This repository holds the **URDF models** and [**`ros2_control` integration**](https://control.ros.org/humble/index.html) for the [**MyActuator RMD-X actuator series**](https://www.myactuator.com/rmd-x). The CAD models for the URDF models were obtained from the [offical MyActuator RMD web page](https://www.myactuator.com/downloads-x-series). The hardware interface is based on the [C++ driver that I have written for these actuators](https://github.com/2b-t/myactuator_rmd). You will need to clone both of the repositories to your ROS 2 workspace and [follow these instructions for installing its dependencies](https://github.com/2b-t/myactuator_rmd/blob/main/ReadMe.md):
 
 ```bash
 $ cd /colcon_ws/src
