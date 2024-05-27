@@ -10,14 +10,15 @@
       <mass value="${m}"/>
       <origin xyz="${x} ${y} ${z}" rpy="0 0 0"/>
       <inertia ixx="${1/12*m*height*height}" ixy="0.0" ixz="0.0"
-                iyy="${1/12*m*height*height}" iyz="0.0"
-                izz="${1/2*m*radius*radius}"/>
+               iyy="${1/12*m*height*height}" iyz="0.0"
+               izz="${1/2*m*radius*radius}"/>
     </inertial>
   </xacro:macro>
 
   <!-- Actuator geometry -->
-  <xacro:macro name="myactuator_rmd" params="name parent_link child_link joint_name
-                                             simulation ifname actuator_id visual
+  <xacro:macro name="myactuator_rmd" params="prefix joint_name 
+                                             simulation ifname actuator_id
+                                             visual
                                              radius_1 height_1
                                              radius_2 height_2
                                              radius_3 height_3 mass">
@@ -31,7 +32,7 @@
     <xacro:property name="mass_2" value="${volume_2/volume_1_2_3*mass}"/>
     <xacro:property name="mass_3" value="${volume_3/volume_1_2_3*mass}"/>
 
-    <link name="${name}">
+    <link name="${prefix}actuator_backplate">
       <visual>
         <geometry>
           <mesh filename="file://${visual}"/>
@@ -47,13 +48,7 @@
                                radius="${radius_1}" height="${height_1}"/>
     </link>
 
-    <joint name="${parent_link}_to_${name}" type="fixed">
-      <origin xyz="0 0 0" rpy="0 0 0" />
-      <parent link="${parent_link}" />
-      <child link="${name}" />
-    </joint>
-
-    <link name="${name}_body">
+    <link name="${prefix}actuator_back_flange">
       <collision>
         <origin xyz="0 0 ${height_2/2}" rpy="0 0 0"/>
         <geometry>
@@ -64,13 +59,21 @@
                                radius="${radius_2}" height="${height_2}"/>
     </link>
 
-    <joint name="${name}_to_${name}_body" type="fixed">
+    <joint name="${prefix}actuator_backplate_to_${prefix}actuator_back_flange" type="fixed">
       <origin xyz="0 0 ${height_1}" rpy="0 0 0" />
-      <parent link="${name}" />
-      <child link="${name}_body" />
+      <parent link="${prefix}actuator_backplate" />
+      <child link="${prefix}actuator_back_flange" />
     </joint>
 
-    <link name="${name}_shaft">
+    <link name="${prefix}actuator_front_flange"/>
+
+    <joint name="${prefix}actuator_back_flange_to_${prefix}actuator_front_flange" type="fixed">
+      <origin xyz="0 0 ${height_2}" rpy="0 0 0" />
+      <parent link="${prefix}actuator_back_flange" />
+      <child link="${prefix}actuator_front_flange" />
+    </joint>
+
+    <link name="${prefix}actuator_shaft">
       <collision>
         <origin xyz="0 0 ${height_3/2}" rpy="0 0 0"/>
         <geometry>
@@ -81,22 +84,25 @@
                                radius="${radius_3}" height="${height_3}"/>
     </link>
 
-    <joint name="${joint_name}" type="revolute">
+    <!-- Joint has to be mounted to links with inertial properties  -->
+    <joint name="${prefix}${joint_name}" type="revolute">
       <origin xyz="0 0 ${height_2}" rpy="0 0 0" />
-      <parent link="${name}_body" />
-      <child link="${name}_shaft" />
+      <parent link="${prefix}actuator_back_flange" />
+      <child link="${prefix}actuator_shaft" />
       <axis xyz="0 0 1"/>
       <limit effort="80" lower="${-pi}" upper="${pi}" velocity="2.0"/>
     </joint>
 
-    <joint name="${name}_to_${name}_shaft" type="fixed">
+    <link name="${prefix}actuator_shaft_flange"/>
+
+    <joint name="${prefix}actuator_shaft_to_${prefix}actuator_shaft_flange" type="fixed">
       <origin xyz="0 0 ${height_3}" rpy="0 0 0" />
-      <parent link="${name}_shaft" />
-      <child link="${child_link}" />
+      <parent link="${prefix}actuator_shaft" />
+      <child link="${prefix}actuator_shaft_flange" />
     </joint>
 
     <!-- ros2_control configuration -->
-    <xacro:myactuator_rmd_ros2_control name="${joint_name}_ros2_control" joint_name="${joint_name}" simulation="${simulation}"
+    <xacro:myactuator_rmd_ros2_control name="${prefix}${joint_name}_ros2_control" joint_name="${prefix}${joint_name}" simulation="${simulation}"
                                        ifname="${ifname}" actuator_id="${actuator_id}"/>
   </xacro:macro>
 

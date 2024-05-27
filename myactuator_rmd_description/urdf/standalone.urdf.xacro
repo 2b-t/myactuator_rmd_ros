@@ -1,5 +1,7 @@
 <?xml version="1.0"?>
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="myactuator_rmd">
+  <!-- Prefix for multiple actuators in the same URDF -->
+  <xacro:arg name="prefix" default=""/>
   <!-- Model of the actuator to be used -->
   <xacro:arg name="actuator" default="X8ProV2"/>
   <!-- Use simulated or real hardware interface -->
@@ -14,24 +16,35 @@
   <xacro:property name="child_link" value="child"/>
   <xacro:property name="joint_name" value="joint"/>
 
-  <!-- Parent and child link -->
-  <link name="${parent_link}"/>
-  <link name="${child_link}"/>
-
   <!-- Actuator -->
   <xacro:property name="actuator_model" value="$(arg actuator)"/>
   <xacro:if value="${actuator_model == 'X8ProV2'}">
     <xacro:include filename="$(find myactuator_rmd_description)/urdf/X8ProV2.xacro"/>
-    <xacro:X8ProV2 name="X8ProV2" parent_link="${parent_link}" child_link="${child_link}" joint_name="${joint_name}"
+    <xacro:X8ProV2 prefix="$(arg prefix)" joint_name="${joint_name}"
                    simulation="$(arg simulation)"
                    ifname="$(arg ifname)" actuator_id="$(arg actuator_id)"/>
   </xacro:if>
   <xacro:if value="${actuator_model == 'X12_150'}">
     <xacro:include filename="$(find myactuator_rmd_description)/urdf/X12_150.xacro"/>
-    <xacro:X12_150 name="X12_150" parent_link="${parent_link}" child_link="${child_link}" joint_name="${joint_name}"
+    <xacro:X12_150 prefix="$(arg prefix)" joint_name="${joint_name}"
                    simulation="$(arg simulation)"
                    ifname="$(arg ifname)" actuator_id="$(arg actuator_id)"/>
   </xacro:if>
+
+  <!-- Parent and child link and their fixed joints to the actuator -->
+  <link name="${parent_link}"/>
+  <link name="${child_link}"/>
+
+  <joint name="${parent_link}_to_actuator" type="fixed">
+    <origin xyz="0 0 0" rpy="0 0 0" />
+    <parent link="${parent_link}" />
+    <child link="$(arg prefix)actuator_backplate" />
+  </joint>
+  <joint name="actuator_to_${child_link}" type="fixed">
+    <origin xyz="0 0 0" rpy="0 0 0" />
+    <parent link="$(arg prefix)actuator_shaft_flange" />
+    <child link="${child_link}" />
+  </joint>
 
   <!-- Gazebo ros2_control plug-in -->
   <xacro:if value="$(arg simulation)">
