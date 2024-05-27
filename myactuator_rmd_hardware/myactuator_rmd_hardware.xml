@@ -1,0 +1,9 @@
+<library path="myactuator_rmd_hardware">
+  <class name="myactuator_rmd_hardware/MyActuatorRmdHardwareInterface"
+         type="myactuator_rmd_hardware::MyActuatorRmdHardwareInterface"
+         base_class_type="hardware_interface::ActuatorInterface">
+    <description>
+      ros2_control hardware interface for the MyActuator RMD-X-series
+    </description>
+  </class>
+</library>

@@ -1,0 +1,51 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="X8ProV2">
+  <!-- Use simulated or real hardware interface -->
+  <xacro:arg name="simulation" default="false"/>
+  <!-- CAN interface for real hardware interface -->
+  <xacro:arg name="ifname" default=""/>
+  <!-- CAN id for real hardware interface -->
+  <xacro:arg name="actuator_id" default=""/>
+
+  <xacro:include filename="$(find myactuator_rmd_description)/urdf/X8ProV2/X8ProV2.xacro" />
+
+  <!-- Create parent link -->
+  <link name="world"/>
+  <!-- Create child link -->
+  <link name="child">
+    <!-- This link needs mass -->
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <cylinder length="0.01" radius="0.01"/>
+      </geometry>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <cylinder length="0.01" radius="0.01"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="0.05"/>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <inertia ixx="0.1" ixy="0.0" ixz="0.0"
+               iyy="0.1" iyz="0.0"
+               izz="0.1"/>
+    </inertial>
+  </link>
+
+  <!-- Actuator -->
+  <xacro:X8ProV2 name="X8ProV2" parent_link="world" child_link="child" joint_name="joint" simulation="$(arg simulation)"
+                 ifname="$(arg ifname)" actuator_id="$(arg actuator_id)"/>
+
+  <!-- Gazebo ros2_control plug-in -->
+  <xacro:if value="$(arg simulation)">
+    <gazebo>
+      <plugin filename="libgazebo_ros2_control.so" name="gazebo_ros2_control">
+        <parameters>$(find myactuator_rmd_description)/config/myactuator_rmd_controllers.yaml</parameters>
+      </plugin>
+    </gazebo>
+  </xacro:if>
+
+</robot>

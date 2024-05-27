@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <!-- ros2_control configuration for a given joint -->
+  <xacro:macro name="myactuator_rmd_ros2_control" params="name joint_name simulation ifname actuator_id">
+    <ros2_control name="${name}" type="actuator">
+      <hardware>
+        <xacro:if value="${simulation}">
+          <plugin>gazebo_ros2_control/GazeboSystem</plugin>
+          <!-- <plugin>fake_components/GenericActuator</plugin> -->
+        </xacro:if>
+        <xacro:unless value="${simulation}">
+          <plugin>myactuator_rmd_hardware/MyActuatorRmdHardwareInterface</plugin>
+          <param name="ifname">${ifname}</param>
+          <param name="actuator_id">${actuator_id}</param>
+        </xacro:unless>
+      </hardware>
+      <joint name="${joint_name}">
+        <command_interface name="effort"/>
+        <command_interface name="velocity"/>
+        <command_interface name="position"/>
+        <state_interface name="effort"/>
+        <state_interface name="velocity"/>
+        <state_interface name="position"/>
+      </joint>
+    </ros2_control>
+  </xacro:macro>
+
+</robot>
