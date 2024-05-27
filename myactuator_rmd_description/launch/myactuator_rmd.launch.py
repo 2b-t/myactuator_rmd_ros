@@ -30,7 +30,7 @@ def generate_launch_description():
 
     actuator_cmd = DeclareLaunchArgument(
         actuator_parameter_name,
-        choices=['X8ProV2'],
+        choices=['X8ProV2', 'X12_150'],
         default_value='X8ProV2',
         description='Type of the actuator'
     )
@@ -52,7 +52,7 @@ def generate_launch_description():
     default_xacro_file = PathJoinSubstitution(
         [
             get_package_share_directory('myactuator_rmd_description'),
-            'urdf', actuator, 'standalone.urdf.xacro'
+            'urdf', 'standalone.urdf.xacro'
         ]
     )
     xacro_parameter_cmd = DeclareLaunchArgument(
@@ -65,6 +65,7 @@ def generate_launch_description():
         [
             PathJoinSubstitution([FindExecutable(name='xacro')]), ' ',
             PathJoinSubstitution([xacro_file]), ' ',
+            'actuator:=', actuator, ' ',
             'simulation:=', simulation, ' ',
             'ifname:=', ifname, ' ',
             'actuator_id:=', actuator_id

@@ -28,7 +28,7 @@ def generate_launch_description():
 
     actuator_cmd = DeclareLaunchArgument(
         actuator_parameter_name,
-        choices=['X8ProV2'],
+        choices=['X8ProV2', 'X12_150'],
         default_value='X8ProV2',
         description='Type of the actuator'
     )
@@ -89,7 +89,7 @@ def generate_launch_description():
         package='gazebo_ros',
         executable='spawn_entity.py',
         name='gazebo_spawner',
-        arguments=['-entity', actuator, '-topic', 'robot_description'],
+        arguments=['-entity', 'myactuator_rmd', '-topic', 'robot_description'],
         output='screen'
     )
 

@@ -1,0 +1,45 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="myactuator_rmd">
+  <!-- Model of the actuator to be used -->
+  <xacro:arg name="actuator" default="X8ProV2"/>
+  <!-- Use simulated or real hardware interface -->
+  <xacro:arg name="simulation" default="false"/>
+  <!-- CAN interface for real hardware interface -->
+  <xacro:arg name="ifname" default=""/>
+  <!-- CAN id for real hardware interface -->
+  <xacro:arg name="actuator_id" default=""/>
+
+  <!-- Define link names -->
+  <xacro:property name="parent_link" value="world"/>
+  <xacro:property name="child_link" value="child"/>
+  <xacro:property name="joint_name" value="joint"/>
+
+  <!-- Parent and child link -->
+  <link name="${parent_link}"/>
+  <link name="${child_link}"/>
+
+  <!-- Actuator -->
+  <xacro:property name="actuator_model" value="$(arg actuator)"/>
+  <xacro:if value="${actuator_model == 'X8ProV2'}">
+    <xacro:include filename="$(find myactuator_rmd_description)/urdf/X8ProV2.xacro"/>
+    <xacro:X8ProV2 name="X8ProV2" parent_link="${parent_link}" child_link="${child_link}" joint_name="${joint_name}"
+                   simulation="$(arg simulation)"
+                   ifname="$(arg ifname)" actuator_id="$(arg actuator_id)"/>
+  </xacro:if>
+  <xacro:if value="${actuator_model == 'X12_150'}">
+    <xacro:include filename="$(find myactuator_rmd_description)/urdf/X12_150.xacro"/>
+    <xacro:X12_150 name="X12_150" parent_link="${parent_link}" child_link="${child_link}" joint_name="${joint_name}"
+                   simulation="$(arg simulation)"
+                   ifname="$(arg ifname)" actuator_id="$(arg actuator_id)"/>
+  </xacro:if>
+
+  <!-- Gazebo ros2_control plug-in -->
+  <xacro:if value="$(arg simulation)">
+    <gazebo>
+      <plugin filename="libgazebo_ros2_control.so" name="gazebo_ros2_control">
+        <parameters>$(find myactuator_rmd_description)/config/myactuator_rmd_controllers.yaml</parameters>
+      </plugin>
+    </gazebo>
+  </xacro:if>
+
+</robot>

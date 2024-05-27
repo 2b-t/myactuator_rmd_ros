@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+  <xacro:include filename="$(find myactuator_rmd_description)/urdf/myactuator_rmd.xacro"/>
+
+  <!-- Provide dimensions for specific actuator -->
+  <xacro:macro name="X8ProV2" params="name parent_link child_link joint_name simulation ifname actuator_id">
+    <xacro:myactuator_rmd name="${name}" parent_link="${parent_link}" child_link="${child_link}"
+                          joint_name="${joint_name}" simulation="${simulation}"
+                          ifname="${ifname}" actuator_id="${actuator_id}"
+                          visual="$(find myactuator_rmd_description)/meshes/visual/X8ProV2/X8ProV2.dae"
+                          radius_1="0.028" height_1="0.0125"
+                          radius_2="0.049" height_2="0.034"
+                          radius_3="0.03"  height_3="0.0025" mass="0.71"/>
+  </xacro:macro>
+
+</robot>

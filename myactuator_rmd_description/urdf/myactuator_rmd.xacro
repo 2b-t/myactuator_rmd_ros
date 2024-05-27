@@ -86,7 +86,7 @@
       <parent link="${name}_body" />
       <child link="${name}_shaft" />
       <axis xyz="0 0 1"/>
-      <limit effort="87" lower="${-pi}" upper="${pi}" velocity="2.0"/>
+      <limit effort="80" lower="${-pi}" upper="${pi}" velocity="2.0"/>
     </joint>
 
     <joint name="${name}_to_${name}_shaft" type="fixed">

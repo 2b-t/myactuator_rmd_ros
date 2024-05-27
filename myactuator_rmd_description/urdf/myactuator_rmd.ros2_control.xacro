@@ -7,7 +7,6 @@
       <hardware>
         <xacro:if value="${simulation}">
           <plugin>gazebo_ros2_control/GazeboSystem</plugin>
-          <!-- <plugin>fake_components/GenericActuator</plugin> -->
         </xacro:if>
         <xacro:unless value="${simulation}">
           <plugin>myactuator_rmd_hardware/MyActuatorRmdHardwareInterface</plugin>
