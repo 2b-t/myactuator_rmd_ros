@@ -25,7 +25,7 @@ def generate_launch_description():
         description='Type of the actuator'
     )
 
-    description = IncludeLaunchDescription(
+    description_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             [
                 os.path.join(
@@ -59,7 +59,7 @@ def generate_launch_description():
 
     ld = LaunchDescription()
     ld.add_action(actuator_cmd)
-    ld.add_action(description)
+    ld.add_action(description_launch)
     ld.add_action(joint_state_publisher_gui_node)
     ld.add_action(rviz_node)
     return ld
