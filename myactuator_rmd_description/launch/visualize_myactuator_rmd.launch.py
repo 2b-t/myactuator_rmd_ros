@@ -21,7 +21,6 @@ def generate_launch_description():
 
     actuator_cmd = DeclareLaunchArgument(
         actuator_parameter_name,
-        choices=['X8ProV2', 'X12_150'],
         default_value='X8ProV2',
         description='Type of the actuator'
     )
@@ -41,7 +40,7 @@ def generate_launch_description():
         }.items(),
     )
 
-    joint_state_publisher_gui = Node(
+    joint_state_publisher_gui_node = Node(
         package='joint_state_publisher_gui',
         executable='joint_state_publisher_gui',
         name='joint_state_publisher_gui'
@@ -52,7 +51,7 @@ def generate_launch_description():
         'rviz',
         'visualize_myactuator_rmd.rviz'
     )
-    rviz = Node(package='rviz2',
+    rviz_node = Node(package='rviz2',
         executable='rviz2',
         name='rviz2',
         arguments=['--display-config', rviz_file]
@@ -61,6 +60,6 @@ def generate_launch_description():
     ld = LaunchDescription()
     ld.add_action(actuator_cmd)
     ld.add_action(description)
-    ld.add_action(joint_state_publisher_gui)
-    ld.add_action(rviz)
+    ld.add_action(joint_state_publisher_gui_node)
+    ld.add_action(rviz_node)
     return ld

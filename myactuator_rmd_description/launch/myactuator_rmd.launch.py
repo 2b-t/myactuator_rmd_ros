@@ -72,7 +72,7 @@ def generate_launch_description():
         ]
     )
     robot_description = {'robot_description': robot_description_content}
-    robot_state_publisher = Node(
+    robot_state_publisher_node = Node(
         package='robot_state_publisher',
         executable='robot_state_publisher',
         name='robot_state_publisher',
@@ -86,5 +86,5 @@ def generate_launch_description():
     ld.add_action(ifname_cmd)
     ld.add_action(simulation_parameter_cmd)
     ld.add_action(xacro_parameter_cmd)
-    ld.add_action(robot_state_publisher)
+    ld.add_action(robot_state_publisher_node)
     return ld

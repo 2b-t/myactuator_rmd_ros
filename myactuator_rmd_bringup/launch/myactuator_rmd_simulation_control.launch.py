@@ -28,7 +28,6 @@ def generate_launch_description():
 
     actuator_cmd = DeclareLaunchArgument(
         actuator_parameter_name,
-        choices=['X8ProV2', 'X12_150'],
         default_value='X8ProV2',
         description='Type of the actuator'
     )
