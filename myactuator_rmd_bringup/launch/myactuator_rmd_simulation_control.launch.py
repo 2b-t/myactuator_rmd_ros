@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 """
-Author: Tobit Flatscher (github.com/2b-t)
-
-Launch file for loading Gazebo simulation of MyActuator RMD-X-series
+@file myactuator_rmd_simulation_control.launch.py
+@brief
+    Launch file for loading Gazebo simulation of MyActuator RMD-X-series
+@author
+    Tobit Flatscher (github.com/2b-t)
 """
 
 import os

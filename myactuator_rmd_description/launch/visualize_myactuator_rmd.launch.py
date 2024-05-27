@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 """
-Author: Tobit Flatscher (github.com/2b-t)
-
-Launch file for visualizing MyActuator RMD-X-series URDF
+@file visualize_myactuator_rmd.launch.py
+@brief
+    Launch file for visualizing MyActuator RMD-X-series URDF
+@author
+    Tobit Flatscher (github.com/2b-t)
 """
 
 import os
