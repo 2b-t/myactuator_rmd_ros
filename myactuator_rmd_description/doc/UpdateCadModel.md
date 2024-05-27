@@ -73,7 +73,7 @@ In order to preview the actuator with this package we will also have to adapt th
 </xacro:if>
 ```
 
-Finally we will have to also adapt all of the launch files inside the packages adding another choice for `actuator_cmd`:
+Finally we will have to also adapt the `myactuator_rmd.launch.py` launch file inside this package adding another choice for `actuator_cmd`:
 
 ```python
 actuator_cmd = DeclareLaunchArgument(
