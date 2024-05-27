@@ -49,9 +49,8 @@ After editing the CAD file and saving it as a COLLADA file, create a new Xacro u
   <xacro:include filename="$(find myactuator_rmd_description)/urdf/myactuator_rmd.xacro"/>
 
   <!-- Provide dimensions for specific actuator -->
-  <xacro:macro name="" params="name parent_link child_link joint_name simulation ifname actuator_id">
-    <xacro:myactuator_rmd name="${name}" parent_link="${parent_link}" child_link="${child_link}"
-                          joint_name="${joint_name}" simulation="${simulation}"
+  <xacro:macro name="X12_150" params="prefix joint_name simulation ifname actuator_id">
+    <xacro:myactuator_rmd prefix="${prefix}" joint_name="${joint_name}" simulation="${simulation}"
                           ifname="${ifname}" actuator_id="${actuator_id}"
                           visual="$(find myactuator_rmd_description)/meshes/visual/X12_150/X12_150.dae"
                           radius_1="0.04"  height_1="0.0136"
@@ -67,7 +66,7 @@ In order to preview the actuator with this package we will also have to adapt th
 ```xml
 <xacro:if value="${actuator_model == 'X12_150'}">
   <xacro:include filename="$(find myactuator_rmd_description)/urdf/X12_150.xacro"/>
-  <xacro:X12_150 name="X12_150" parent_link="${parent_link}" child_link="${child_link}" joint_name="${joint_name}"
+  <xacro:X12_150 prefix="$(arg prefix)" joint_name="${joint_name}"
                  simulation="$(arg simulation)"
                  ifname="$(arg ifname)" actuator_id="$(arg actuator_id)"/>
 </xacro:if>
