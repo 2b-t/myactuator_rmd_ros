@@ -1,7 +1,7 @@
 """
-@file myactuator_rmd_simulation_control.launch.py
+@file myactuator_rmd_control.launch.py
 @brief
-    Launch file for loading Gazebo simulation of MyActuator RMD-X-series
+    Launch file for controlling MyActuator RMD-X-series either with hardware or in simulation
 @author
     Tobit Flatscher (github.com/2b-t)
 """
@@ -11,26 +11,46 @@ import os
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
-from launch.conditions import IfCondition
+from launch.conditions import IfCondition, UnlessCondition
 from launch.launch_description_sources import PythonLaunchDescriptionSource
-from launch.substitutions import LaunchConfiguration
+from launch.substitutions import (
+    Command, FindExecutable, LaunchConfiguration, PathJoinSubstitution
+)
 from launch_ros.actions import Node
 
 
 def generate_launch_description():
     actuator_parameter_name = 'actuator'
     actuator = LaunchConfiguration(actuator_parameter_name)
+    actuator_id_parameter_name = 'actuator_id'
+    actuator_id = LaunchConfiguration(actuator_id_parameter_name)
+    ifname_parameter_name = 'ifname'
+    ifname = LaunchConfiguration(ifname_parameter_name)
     controller_parameter_name = 'controller'
     controller = LaunchConfiguration(controller_parameter_name)
     rqt_controller_manager_parameter_name = 'rqt_controller_manager'
     rqt_controller_manager = LaunchConfiguration(rqt_controller_manager_parameter_name)
     rqt_joint_trajectory_controller_parameter_name = 'rqt_joint_trajectory_controller'
     rqt_joint_trajectory_controller = LaunchConfiguration(rqt_joint_trajectory_controller_parameter_name)
+    simulation_parameter_name = 'simulation'
+    simulation = LaunchConfiguration(simulation_parameter_name)
+    xacro_file_parameter_name = 'xacro_file'
+    xacro_file = LaunchConfiguration(xacro_file_parameter_name)
 
     actuator_cmd = DeclareLaunchArgument(
         actuator_parameter_name,
         default_value='X8ProV2',
         description='Type of the actuator'
+    )
+    actuator_id_cmd = DeclareLaunchArgument(
+        actuator_id_parameter_name,
+        default_value='1',
+        description='Actuator id for real hardware'
+    )
+    ifname_cmd = DeclareLaunchArgument(
+        ifname_parameter_name,
+        default_value='can0',
+        description='CAN interface name'
     )
     controller_cmd = DeclareLaunchArgument(
         controller_parameter_name,
@@ -48,7 +68,34 @@ def generate_launch_description():
         default_value='true',
         description='Launch rqt joint trajectory controller GUI'
     )
+    simulation_parameter_cmd = DeclareLaunchArgument(
+        simulation_parameter_name,
+        default_value='true',
+        description='Simulated or real hardware interface'
+    )
+    default_xacro_file = PathJoinSubstitution(
+        [
+            get_package_share_directory('myactuator_rmd_description'),
+            'urdf', 'standalone.urdf.xacro'
+        ]
+    )
+    xacro_file_parameter_cmd = DeclareLaunchArgument(
+        xacro_file_parameter_name,
+        default_value=default_xacro_file,
+        description='Xacro URDF description to be used'
+    )
 
+    robot_description_content = Command(
+        [
+            PathJoinSubstitution([FindExecutable(name='xacro')]), ' ',
+            PathJoinSubstitution([xacro_file]), ' ',
+            'actuator:=', actuator, ' ',
+            'simulation:=', simulation, ' ',
+            'ifname:=', ifname, ' ',
+            'actuator_id:=', actuator_id
+        ]
+    )
+    robot_description = {'robot_description': robot_description_content}
     description_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             [
@@ -60,7 +107,7 @@ def generate_launch_description():
         ),
         launch_arguments={
             'actuator': actuator,
-            'simulation': 'true'
+            'simulation': simulation
         }.items()
     )
 
@@ -69,12 +116,25 @@ def generate_launch_description():
         executable='spawner',
         arguments=['joint_state_broadcaster', '--controller-manager', '/controller_manager']
     )
+    controllers = PathJoinSubstitution(
+        [
+            get_package_share_directory('myactuator_rmd_description'),
+            'config',
+            'myactuator_rmd_controllers.yaml',
+        ]
+    )
+    controller_manager_node = Node(
+        package='controller_manager',
+        executable='ros2_control_node',
+        parameters=[robot_description, controllers],
+        output='screen',
+        condition=UnlessCondition(simulation)
+    )
     controller_spawner_node = Node(
         package='controller_manager',
         executable='spawner',
         arguments=[controller, '-c', '/controller_manager']
     )
-
     gazebo_node = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             [
@@ -83,16 +143,17 @@ def generate_launch_description():
                     'launch', 'gazebo.launch.py'
                 )
             ]
-        )
+        ),
+        condition=IfCondition(simulation)
     )
     gazebo_spawner_node = Node(
         package='gazebo_ros',
         executable='spawn_entity.py',
         name='gazebo_spawner',
         arguments=['-entity', 'myactuator_rmd', '-topic', 'robot_description'],
-        output='screen'
+        output='screen',
+        condition=IfCondition(simulation)
     )
-
     rqt_controller_manager_node = Node(
         package='rqt_controller_manager',
         executable='rqt_controller_manager',
@@ -107,7 +168,6 @@ def generate_launch_description():
         output='screen',
         condition=IfCondition(rqt_joint_trajectory_controller)
     )
-
     rviz_file = os.path.join(
         get_package_share_directory('myactuator_rmd_description'),
         'rviz',
@@ -121,11 +181,16 @@ def generate_launch_description():
 
     ld = LaunchDescription()
     ld.add_action(actuator_cmd)
+    ld.add_action(actuator_id_cmd)
+    ld.add_action(ifname_cmd)
     ld.add_action(controller_cmd)
     ld.add_action(rqt_controller_manager_cmd)
     ld.add_action(rqt_joint_trajectory_controller_cmd)
+    ld.add_action(simulation_parameter_cmd)
+    ld.add_action(xacro_file_parameter_cmd)
     ld.add_action(description_launch)
     ld.add_action(joint_state_broadcaster_spawner_node)
+    ld.add_action(controller_manager_node)
     ld.add_action(controller_spawner_node)
     ld.add_action(gazebo_node)
     ld.add_action(gazebo_spawner_node)

@@ -26,8 +26,8 @@ def generate_launch_description():
     ifname = LaunchConfiguration(ifname_parameter_name)
     simulation_parameter_name = 'simulation'
     simulation = LaunchConfiguration(simulation_parameter_name)
-    xacro_parameter_name = 'xacro_file'
-    xacro_file = LaunchConfiguration(xacro_parameter_name)
+    xacro_file_parameter_name = 'xacro_file'
+    xacro_file = LaunchConfiguration(xacro_file_parameter_name)
 
     actuator_cmd = DeclareLaunchArgument(
         actuator_parameter_name,
@@ -56,8 +56,8 @@ def generate_launch_description():
             'urdf', 'standalone.urdf.xacro'
         ]
     )
-    xacro_parameter_cmd = DeclareLaunchArgument(
-        xacro_parameter_name,
+    xacro_file_parameter_cmd = DeclareLaunchArgument(
+        xacro_file_parameter_name,
         default_value=default_xacro_file,
         description='Xacro URDF description to be used'
     )
@@ -86,6 +86,6 @@ def generate_launch_description():
     ld.add_action(actuator_id_cmd)
     ld.add_action(ifname_cmd)
     ld.add_action(simulation_parameter_cmd)
-    ld.add_action(xacro_parameter_cmd)
+    ld.add_action(xacro_file_parameter_cmd)
     ld.add_action(robot_state_publisher_node)
     return ld
