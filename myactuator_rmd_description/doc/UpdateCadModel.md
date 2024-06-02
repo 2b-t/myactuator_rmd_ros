@@ -52,6 +52,9 @@ After editing the CAD file and saving it as a COLLADA file, create a new Xacro u
   <xacro:macro name="X12_150" params="prefix joint_name simulation ifname actuator_id">
     <xacro:myactuator_rmd prefix="${prefix}" joint_name="${joint_name}" simulation="${simulation}"
                           ifname="${ifname}" actuator_id="${actuator_id}"
+                          torque_constant="3.33"
+                          limit_effort="150.0" limit_lower="${-pi}" limit_upper="${pi}"
+                          limit_velocity="${100/60*2*pi}"
                           visual="$(find myactuator_rmd_description)/meshes/visual/X12_150/X12_150.dae"
                           radius_1="0.04"  height_1="0.0136"
                           radius_2="0.062" height_2="0.0435"
@@ -72,7 +75,7 @@ In order to preview the actuator with this package we will also have to adapt th
 </xacro:if>
 ```
 
-Finally we will have to also adapt the `myactuator_rmd.launch.py` launch file inside this package adding another choice for `actuator_cmd`:
+Finally we will have to also adapt the `myactuator_rmd.launch.py` launch file inside this package as well as `myactuator_rmd_control.launch.py` inside `myactuator_rmd_bringup` adding another choice for `actuator_cmd`:
 
 ```python
 actuator_cmd = DeclareLaunchArgument(

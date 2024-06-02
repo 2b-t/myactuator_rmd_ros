@@ -18,6 +18,9 @@
   <!-- Actuator geometry -->
   <xacro:macro name="myactuator_rmd" params="prefix joint_name 
                                              simulation ifname actuator_id
+                                             torque_constant
+                                             limit_effort limit_lower limit_upper
+                                             limit_velocity
                                              visual
                                              radius_1 height_1
                                              radius_2 height_2
@@ -90,7 +93,7 @@
       <parent link="${prefix}actuator_back_flange" />
       <child link="${prefix}actuator_shaft" />
       <axis xyz="0 0 1"/>
-      <limit effort="80" lower="${-pi}" upper="${pi}" velocity="2.0"/>
+      <limit effort="${limit_effort}" lower="${limit_lower}" upper="${limit_upper}" velocity="${limit_velocity}"/>
     </joint>
 
     <link name="${prefix}actuator_shaft_flange"/>
@@ -103,7 +106,7 @@
 
     <!-- ros2_control configuration -->
     <xacro:myactuator_rmd_ros2_control name="${prefix}${joint_name}_ros2_control" joint_name="${prefix}${joint_name}" simulation="${simulation}"
-                                       ifname="${ifname}" actuator_id="${actuator_id}"/>
+                                       ifname="${ifname}" actuator_id="${actuator_id}" torque_constant="${torque_constant}"/>
   </xacro:macro>
 
 </robot>

@@ -2,7 +2,7 @@
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro">
 
   <!-- ros2_control configuration for a given joint -->
-  <xacro:macro name="myactuator_rmd_ros2_control" params="name joint_name simulation ifname actuator_id">
+  <xacro:macro name="myactuator_rmd_ros2_control" params="name joint_name simulation ifname actuator_id torque_constant">
     <ros2_control name="${name}" type="actuator">
       <hardware>
         <xacro:if value="${simulation}">
@@ -10,17 +10,21 @@
         </xacro:if>
         <xacro:unless value="${simulation}">
           <plugin>myactuator_rmd_hardware/MyActuatorRmdHardwareInterface</plugin>
+          <!-- The name of the CAN interface -->
           <param name="ifname">${ifname}</param>
+          <!-- The id used for the CAN communication -->
           <param name="actuator_id">${actuator_id}</param>
+          <!-- Torque constant of the actuator -->
+          <param name="torque_constant">${torque_constant}</param>
         </xacro:unless>
       </hardware>
       <joint name="${joint_name}">
-        <command_interface name="effort"/>
-        <command_interface name="velocity"/>
         <command_interface name="position"/>
-        <state_interface name="effort"/>
-        <state_interface name="velocity"/>
+        <command_interface name="velocity"/>
+        <command_interface name="effort"/>
         <state_interface name="position"/>
+        <state_interface name="velocity"/>
+        <state_interface name="effort"/>
       </joint>
     </ros2_control>
   </xacro:macro>
