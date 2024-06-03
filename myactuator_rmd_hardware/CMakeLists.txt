@@ -19,6 +19,8 @@ target_include_directories(${PROJECT_NAME} PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>
 )
+# Needed for std::atomic
+target_link_libraries(${PROJECT_NAME} -latomic)
 ament_target_dependencies(
   myactuator_rmd_hardware
   hardware_interface
