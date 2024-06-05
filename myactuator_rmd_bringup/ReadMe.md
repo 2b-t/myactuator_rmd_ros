@@ -17,4 +17,10 @@ $ ros2 launch myactuator_rmd_bringup myactuator_rmd_control.launch.py actuator:=
 
 Additionally to RViz and Gazebo this should open up a GUI for the controller manager as well as another GUI for the joint trajectory controller. In the latter you can activate the `joint_trajectory_controller` and move the actuator with it.
 
+Alternatively you can switch to the effort, position or velocity controller with the controller manager GUI and publish set-points either to the `/effort_controller/commands`, `/position_controller/commands` or `/velocity_controller/commands` topic with:
+
+```bash
+$ ros2 topic pub /effort_controller/commands std_msgs/msg/Float64MultiArray "{data: [0.5]}"
+```
+
 ![Gazebo preview](./media/gazebo-preview.png)
