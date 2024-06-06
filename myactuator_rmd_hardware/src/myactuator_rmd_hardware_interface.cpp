@@ -1,7 +1,5 @@
 #include "myactuator_rmd_hardware/myactuator_rmd_hardware_interface.hpp"
 
-#include <iostream>
-
 #include <atomic>
 #include <chrono>
 #include <limits>
