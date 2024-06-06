@@ -60,9 +60,14 @@ namespace myactuator_rmd_hardware {
       max_velocity_ = std::stod(info_.hardware_parameters["max_velocity"]);
     } else {
       max_velocity_ = 720.0;
-      RCLCPP_INFO(getLogger(), "Max velocity not set, defaulting to '%f'", max_velocity_);
+      RCLCPP_INFO(getLogger(), "Max velocity not set, defaulting to '%f'.", max_velocity_);
     }
-    cycle_time_ = std::chrono::milliseconds(1);
+    if (info_.hardware_parameters.find("cycle_time") != info_.hardware_parameters.end()) {
+      cycle_time_ = std::chrono::milliseconds(std::stol(info_.hardware_parameters["cycle_time"]));
+    } else {
+      cycle_time_ = std::chrono::milliseconds(1);
+      RCLCPP_INFO(getLogger(), "Cycle time not set, defaulting to '%ld' ms.", cycle_time_.count());
+    }
 
     driver_ = std::make_unique<myactuator_rmd::CanDriver>(ifname_);
     actuator_interface_ = std::make_unique<myactuator_rmd::ActuatorInterface>(*driver_, actuator_id_);
