@@ -1,0 +1,9 @@
+<library path="myactuator_rmd_state_broadcaster">
+  <class name="myactuator_rmd_state_broadcaster/MyActuatorRmdStateBroadcaster"
+         type="myactuator_rmd_state_broadcaster::MyActuatorRmdStateBroadcaster"
+         base_class_type="controller_interface::ControllerInterface">
+    <description>
+      ros2_control status broadcaster for the MyActuator RMD-X-series
+    </description>
+  </class>
+</library>

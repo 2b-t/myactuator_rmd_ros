@@ -116,6 +116,11 @@ def generate_launch_description():
         executable='spawner',
         arguments=['joint_state_broadcaster', '--controller-manager', '/controller_manager']
     )
+    myactuator_rmd_state_broadcaster_spawner_node = Node(
+        package='controller_manager',
+        executable='spawner',
+        arguments=['myactuator_rmd_state_broadcaster', '--controller-manager', '/controller_manager']
+    )
     controllers = PathJoinSubstitution(
         [
             get_package_share_directory('myactuator_rmd_description'),
@@ -190,6 +195,7 @@ def generate_launch_description():
     ld.add_action(xacro_file_parameter_cmd)
     ld.add_action(description_launch)
     ld.add_action(joint_state_broadcaster_spawner_node)
+    ld.add_action(myactuator_rmd_state_broadcaster_spawner_node)
     ld.add_action(controller_manager_node)
     ld.add_action(controller_spawner_node)
     ld.add_action(gazebo_node)

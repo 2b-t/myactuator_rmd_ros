@@ -133,6 +133,14 @@ namespace myactuator_rmd_hardware {
     velocity_command_ = 0.0;
     effort_command_ = 0.0;
 
+    temperature_state_ = 0.0;
+    voltage_state_ = 0.0;
+    current_state_ = 0.0;
+    current_phase_a_state_ = 0.0;
+    current_phase_b_state_ = 0.0;
+    current_phase_c_state_ = 0.0;
+    brake_state_ = 0.0;
+
     position_interface_running_.store(false);
     velocity_interface_running_.store(false);
     effort_interface_running_.store(false);
@@ -200,6 +208,30 @@ namespace myactuator_rmd_hardware {
     state_interfaces.emplace_back(hardware_interface::StateInterface(
       info_.joints.at(0).name, hardware_interface::HW_IF_EFFORT, &effort_state_)
     );
+    state_interfaces.emplace_back(hardware_interface::StateInterface(
+      info_.joints.at(0).name, "rmd_temperature", &temperature_state_)
+    );
+    state_interfaces.emplace_back(hardware_interface::StateInterface(
+      info_.joints.at(0).name, "rmd_voltage", &voltage_state_)
+    );
+    state_interfaces.emplace_back(hardware_interface::StateInterface(
+      info_.joints.at(0).name, "rmd_current", &current_state_)
+    );
+    state_interfaces.emplace_back(hardware_interface::StateInterface(
+      info_.joints.at(0).name, "rmd_current_phase_a", &current_phase_a_state_)
+    );
+    state_interfaces.emplace_back(hardware_interface::StateInterface(
+      info_.joints.at(0).name, "rmd_current_phase_b", &current_phase_b_state_)
+    );
+    state_interfaces.emplace_back(hardware_interface::StateInterface(
+      info_.joints.at(0).name, "rmd_current_phase_c", &current_phase_c_state_)
+    );
+    state_interfaces.emplace_back(hardware_interface::StateInterface(
+      info_.joints.at(0).name, "rmd_error_code", &error_code_state_)
+    );
+    state_interfaces.emplace_back(hardware_interface::StateInterface(
+      info_.joints.at(0).name, "rmd_brake", &brake_state_)
+    );
     return state_interfaces;
   }
 
@@ -260,6 +292,14 @@ namespace myactuator_rmd_hardware {
     position_state_ = degToRad(feedback_.load().shaft_angle);
     velocity_state_ = degToRad(feedback_.load().shaft_speed);
     effort_state_ = currentToTorque(feedback_.load().current, torque_constant_);
+    temperature_state_ = static_cast<double>(feedback_.load().temperature);
+    error_code_state_ = static_cast<double>(motor_status1_.load().error_code);
+    brake_state_ = static_cast<double>(motor_status1_.load().is_brake_released);
+    voltage_state_ = static_cast<double>(motor_status1_.load().voltage);
+    current_state_ = static_cast<double>(feedback_.load().current);
+    current_phase_a_state_ = static_cast<double>(motor_status3_.load().current_phase_a);
+    current_phase_b_state_ = static_cast<double>(motor_status3_.load().current_phase_b);
+    current_phase_c_state_ = static_cast<double>(motor_status3_.load().current_phase_c);
     return hardware_interface::return_type::OK;
   }
 
@@ -291,6 +331,8 @@ namespace myactuator_rmd_hardware {
       } else if (effort_interface_running_) {
         feedback_ = actuator_interface_->sendTorqueSetpoint(command_thread_effort_.load(), torque_constant_);
       }
+      motor_status1_ = actuator_interface_->getMotorStatus1();
+      motor_status3_ = actuator_interface_->getMotorStatus3();
       std::this_thread::sleep_until(wakeup_time);
     }
     return;

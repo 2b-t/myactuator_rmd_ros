@@ -262,6 +262,16 @@ namespace myactuator_rmd_hardware {
       double velocity_command_;
       double effort_command_;
 
+      // Buffer status Actuator
+      double error_code_state_;
+      double temperature_state_;
+      double brake_state_;
+      double voltage_state_;
+      double current_state_;
+      double current_phase_a_state_;
+      double current_phase_b_state_;
+      double current_phase_c_state_;
+      
       // The command thread reads and writes from the actuator cyclically
       std::thread command_thread_;
       std::chrono::milliseconds cycle_time_;
@@ -271,6 +281,8 @@ namespace myactuator_rmd_hardware {
       // Shared between the two threads
       std::atomic<bool> stop_command_thread_;
       std::atomic<myactuator_rmd::Feedback> feedback_;
+      std::atomic<myactuator_rmd::MotorStatus1>motor_status1_;
+      std::atomic<myactuator_rmd::MotorStatus3>motor_status3_;
       std::atomic<double> command_thread_position_;
       std::atomic<double> command_thread_velocity_;
       std::atomic<double> command_thread_effort_;
