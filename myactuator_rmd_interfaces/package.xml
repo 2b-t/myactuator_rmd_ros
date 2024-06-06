@@ -3,7 +3,7 @@
 <package format="3">
   <name>myactuator_rmd_interfaces</name>
   <version>0.0.0</version>
-  <description>TODO: Package description</description>
+  <description>Ros interface message interface for the MyActuator RMD-X-series</description>
   <maintainer email="orcil.lionel@gmail.com">ORCIL Lionel</maintainer>
   <license>MIT</license>
 
