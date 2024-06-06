@@ -7,6 +7,7 @@
     <xacro:myactuator_rmd prefix="${prefix}" joint_name="${joint_name}" simulation="${simulation}"
                           ifname="${ifname}" actuator_id="${actuator_id}"
                           torque_constant="2.6"
+                          timeout="1000"
                           limit_effort="25.0" limit_lower="${-pi}" limit_upper="${pi}"
                           limit_velocity="${122/60*2*pi}"
                           visual="$(find myactuator_rmd_description)/meshes/visual/X8ProV2/X8ProV2.dae"

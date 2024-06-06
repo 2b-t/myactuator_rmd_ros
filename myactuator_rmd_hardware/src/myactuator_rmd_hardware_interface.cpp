@@ -62,6 +62,12 @@ namespace myactuator_rmd_hardware {
       max_velocity_ = 720.0;
       RCLCPP_INFO(getLogger(), "Max velocity not set, defaulting to '%f'", max_velocity_);
     }
+    if (info_.hardware_parameters.find("timeout") != info_.hardware_parameters.end()) {
+      timeout_= std::chrono::milliseconds(int(std::stoi(info_.hardware_parameters["timeout"])));
+    } else {
+      timeout_ = std::chrono::milliseconds(0);
+      RCLCPP_INFO(getLogger(), "Timeout not set, defaulting to '%ld' milliseconds", timeout_.count());
+    }
     cycle_time_ = std::chrono::milliseconds(1);
 
     driver_ = std::make_unique<myactuator_rmd::CanDriver>(ifname_);
@@ -73,6 +79,7 @@ namespace myactuator_rmd_hardware {
     std::string const motor_model {actuator_interface_->getMotorModel()};
     RCLCPP_INFO(getLogger(), "Started actuator interface for actuator model '%s'!", motor_model.c_str());
     stop_command_thread_.store(false);
+    actuator_interface_->setTimeout(timeout_);
     if (!startCommandThread(cycle_time_)) {
       RCLCPP_FATAL(getLogger(), "Failed to start command thread!");
       return CallbackReturn::ERROR;
@@ -293,6 +300,7 @@ namespace myactuator_rmd_hardware {
       }
       std::this_thread::sleep_until(wakeup_time);
     }
+    actuator_interface_->setTimeout(std::chrono::milliseconds(0));
     return;
   }
 

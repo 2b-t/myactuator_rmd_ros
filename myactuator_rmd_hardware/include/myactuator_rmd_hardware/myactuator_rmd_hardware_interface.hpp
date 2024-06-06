@@ -253,6 +253,7 @@ namespace myactuator_rmd_hardware {
       std::uint32_t actuator_id_;
       double torque_constant_;
       double max_velocity_;
+      std::chrono::milliseconds timeout_;
 
       // Buffers only used by the main thread
       double position_state_;
