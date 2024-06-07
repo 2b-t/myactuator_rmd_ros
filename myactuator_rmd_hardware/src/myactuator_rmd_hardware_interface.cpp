@@ -221,27 +221,19 @@ namespace myactuator_rmd_hardware {
     std::vector<std::string> const& start_interfaces,
     std::vector<std::string> const& stop_interfaces) {
     if (start_interfaces.size() == 1 ) {
-     auto const& start_interface {start_interfaces.at(0)};
+      auto const& start_interface {start_interfaces.at(0)};
       if (start_interface == info_.joints.at(0).name + "/" + hardware_interface::HW_IF_POSITION) {
         if (velocity_interface_running_ || effort_interface_running_) {
           RCLCPP_ERROR(getLogger(), "Failed to switch to position interface!");
           return hardware_interface::return_type::ERROR;
-        } position_interface_running_.store(true);
-        RCLCPP_INFO(getLogger(), "Switched to position interface!");
+        } 
       } else if (start_interface == info_.joints.at(0).name + "/" + hardware_interface::HW_IF_VELOCITY) {
         if (position_interface_running_ || effort_interface_running_) {
           RCLCPP_ERROR(getLogger(), "Failed to switch to velocity interface!");
           return hardware_interface::return_type::ERROR;
-        } velocity_interface_running_.store(true);
-        RCLCPP_INFO(getLogger(), "Switched to velocity interface!");
+        } 
       } else if (start_interface == info_.joints.at(0).name + "/" + hardware_interface::HW_IF_EFFORT) {
-        if (position_interface_running_ || velocity_interface_running_) {
-          RCLCPP_ERROR(getLogger(), "Failed to switch to effort interface!");
-          return hardware_interface::return_type::ERROR;
-        } if (!std::isnan(torque_constant_)) {
-          effort_interface_running_.store(true);
-          RCLCPP_INFO(getLogger(), "Switched to effort interface!");
-        } else {
+        if (position_interface_running_ || velocity_interface_running_ || std::isnan(torque_constant_)) {
           RCLCPP_ERROR(getLogger(), "Failed to switch to effort interface!");
           return hardware_interface::return_type::ERROR;
         }
@@ -250,7 +242,28 @@ namespace myactuator_rmd_hardware {
       RCLCPP_ERROR(getLogger(), "Expected a single joint but got %zu interfaces to start.", start_interfaces.size());
       return hardware_interface::return_type::ERROR;
     }
+    if (stop_interfaces.size() > 1 ) {
+      RCLCPP_ERROR(getLogger(), "Expected a single joint but got %zu interfaces to stop.", stop_interfaces.size());
+      return hardware_interface::return_type::ERROR;
+    }
+    return hardware_interface::return_type::OK;
+  }
 
+  hardware_interface::return_type MyActuatorRmdHardwareInterface::perform_command_mode_switch(
+    std::vector<std::string> const& start_interfaces,
+    std::vector<std::string> const& stop_interfaces) {
+    if (start_interfaces.size() == 1 ) {
+      auto const& start_interface {start_interfaces.at(0)};
+      if (start_interface == info_.joints.at(0).name + "/" + hardware_interface::HW_IF_POSITION) {
+        position_interface_running_.store(true);
+        RCLCPP_INFO(getLogger(), "Switched to position interface!");
+      } else if (start_interface == info_.joints.at(0).name + "/" + hardware_interface::HW_IF_VELOCITY) {
+        velocity_interface_running_.store(true);
+        RCLCPP_INFO(getLogger(), "Switched to velocity interface!");
+      } else if (start_interface == info_.joints.at(0).name + "/" + hardware_interface::HW_IF_EFFORT) {
+        effort_interface_running_.store(true);
+      }
+    }
     if (stop_interfaces.size() == 1 ) {
       auto const& stop_interface {stop_interfaces.at(0)};
       if (stop_interface == info_.joints.at(0).name + "/" + hardware_interface::HW_IF_POSITION) {
@@ -263,10 +276,8 @@ namespace myactuator_rmd_hardware {
         effort_interface_running_.store(false);
         RCLCPP_INFO(getLogger(), "Stop effort interface!");
       }
-    }else if (stop_interfaces.size() > 1 ) {
-      RCLCPP_ERROR(getLogger(), "Expected a single joint but got %zu interfaces to stop.", stop_interfaces.size());
-      return hardware_interface::return_type::ERROR;
     }
+
     return hardware_interface::return_type::OK;
   }
 

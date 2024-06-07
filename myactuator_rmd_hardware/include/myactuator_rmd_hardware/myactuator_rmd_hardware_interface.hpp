@@ -171,6 +171,20 @@ namespace myactuator_rmd_hardware {
       hardware_interface::return_type prepare_command_mode_switch(std::vector<std::string> const& start_interfaces,
         std::vector<std::string> const& stop_interfaces) override;
       
+      /**\fn perform_command_mode_switch
+       * \brief
+       *    Switch of the command mode of the actuator
+       * 
+       * \param[in] start_interfaces
+       *    Interfaces to be started
+       * \param[in] stop_interfaces
+       *    Interfaces to be stopped
+       * \return
+       *    Value indicating success, error or failure of the callback
+      */
+      hardware_interface::return_type perform_command_mode_switch(std::vector<std::string> const& start_interfaces,
+        std::vector<std::string> const& stop_interfaces) override;
+
       /**\fn read
        * \brief
        *    Read the current state of the actuator
