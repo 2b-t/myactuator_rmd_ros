@@ -62,6 +62,18 @@ namespace myactuator_rmd_hardware {
       max_velocity_ = 720.0;
       RCLCPP_INFO(getLogger(), "Max velocity not set, defaulting to '%f'", max_velocity_);
     }
+    if (info_.hardware_parameters.find("extra_status_refresh_rate") != info_.hardware_parameters.end()) {
+      extra_cycle_time_ = std::chrono::milliseconds(std::stoi(info_.hardware_parameters["extra_status_refresh_rate"]));
+    } else {
+      extra_cycle_time_ = std::chrono::milliseconds::zero();
+      RCLCPP_INFO(getLogger(), "Extra status refresh rate not set, defaulting to 0 milliseconds");
+    }
+    if (extra_cycle_time_ != std::chrono::milliseconds::zero()){
+      ExtraThreadIsUsed_ = true;
+    } else {
+      ExtraThreadIsUsed_ = false;
+      RCLCPP_INFO(getLogger(), "Extra status refresh rate is 0 milliseconds, it will not be implemented!");
+    }
     cycle_time_ = std::chrono::milliseconds(1);
 
     driver_ = std::make_unique<myactuator_rmd::CanDriver>(ifname_);
@@ -77,11 +89,18 @@ namespace myactuator_rmd_hardware {
       RCLCPP_FATAL(getLogger(), "Failed to start command thread!");
       return CallbackReturn::ERROR;
     }
-
+    stop_extra_thread_.store(false);
+    if (ExtraThreadIsUsed_) {
+      if (!startExtraThread(extra_cycle_time_)) {
+        RCLCPP_FATAL(getLogger(), "Failed to start extra status thread!");
+        return CallbackReturn::ERROR;
+      }
+    }
     return CallbackReturn::SUCCESS;
   }
       
   CallbackReturn MyActuatorRmdHardwareInterface::on_cleanup(rclcpp_lifecycle::State const& /*previous_state*/) {
+    stopExtraThread();
     stopCommandThread();
     if (actuator_interface_) {
       actuator_interface_->shutdownMotor();
@@ -90,6 +109,7 @@ namespace myactuator_rmd_hardware {
   }
   
   CallbackReturn MyActuatorRmdHardwareInterface::on_shutdown(rclcpp_lifecycle::State const& /*previous_state*/) {
+    stopExtraThread();
     stopCommandThread();
     if (actuator_interface_) {
       actuator_interface_->shutdownMotor();
@@ -103,6 +123,7 @@ namespace myactuator_rmd_hardware {
   }
 
   CallbackReturn MyActuatorRmdHardwareInterface::on_deactivate(rclcpp_lifecycle::State const& /*previous_state*/) {
+    stopExtraThread();
     stopCommandThread();
     if (actuator_interface_) {
       actuator_interface_->stopMotor();
@@ -112,6 +133,7 @@ namespace myactuator_rmd_hardware {
   }
   
   CallbackReturn MyActuatorRmdHardwareInterface::on_error(rclcpp_lifecycle::State const& /*previous_state*/) {
+    stopExtraThread();
     stopCommandThread();
     if (actuator_interface_) {
       actuator_interface_->stopMotor();
@@ -132,15 +154,14 @@ namespace myactuator_rmd_hardware {
     position_command_ = 0.0;
     velocity_command_ = 0.0;
     effort_command_ = 0.0;
-
-    temperature_state_ = 0.0;
-    voltage_state_ = 0.0;
-    current_state_ = 0.0;
-    current_phase_a_state_ = 0.0;
-    current_phase_b_state_ = 0.0;
-    current_phase_c_state_ = 0.0;
-    brake_state_ = 0.0;
-
+    extra_temperature_state_ = std::numeric_limits<double>::quiet_NaN();
+    extra_voltage_state_ = std::numeric_limits<double>::quiet_NaN();
+    extra_current_state_ = std::numeric_limits<double>::quiet_NaN();
+    extra_current_phase_a_state_ = std::numeric_limits<double>::quiet_NaN();
+    extra_current_phase_b_state_ = std::numeric_limits<double>::quiet_NaN();
+    extra_current_phase_c_state_ = std::numeric_limits<double>::quiet_NaN();
+    extra_brake_state_ = std::numeric_limits<double>::quiet_NaN();
+    extra_error_code_state_= std::numeric_limits<double>::quiet_NaN();
     position_interface_running_.store(false);
     velocity_interface_running_.store(false);
     effort_interface_running_.store(false);
@@ -208,30 +229,32 @@ namespace myactuator_rmd_hardware {
     state_interfaces.emplace_back(hardware_interface::StateInterface(
       info_.joints.at(0).name, hardware_interface::HW_IF_EFFORT, &effort_state_)
     );
-    state_interfaces.emplace_back(hardware_interface::StateInterface(
-      info_.joints.at(0).name, "rmd_temperature", &temperature_state_)
-    );
-    state_interfaces.emplace_back(hardware_interface::StateInterface(
-      info_.joints.at(0).name, "rmd_voltage", &voltage_state_)
-    );
-    state_interfaces.emplace_back(hardware_interface::StateInterface(
-      info_.joints.at(0).name, "rmd_current", &current_state_)
-    );
-    state_interfaces.emplace_back(hardware_interface::StateInterface(
-      info_.joints.at(0).name, "rmd_current_phase_a", &current_phase_a_state_)
-    );
-    state_interfaces.emplace_back(hardware_interface::StateInterface(
-      info_.joints.at(0).name, "rmd_current_phase_b", &current_phase_b_state_)
-    );
-    state_interfaces.emplace_back(hardware_interface::StateInterface(
-      info_.joints.at(0).name, "rmd_current_phase_c", &current_phase_c_state_)
-    );
-    state_interfaces.emplace_back(hardware_interface::StateInterface(
-      info_.joints.at(0).name, "rmd_error_code", &error_code_state_)
-    );
-    state_interfaces.emplace_back(hardware_interface::StateInterface(
-      info_.joints.at(0).name, "rmd_brake", &brake_state_)
-    );
+    if (ExtraThreadIsUsed_) {
+      state_interfaces.emplace_back(hardware_interface::StateInterface(
+        info_.joints.at(0).name, "rmd_temperature", &extra_temperature_state_)
+      );
+      state_interfaces.emplace_back(hardware_interface::StateInterface(
+        info_.joints.at(0).name, "rmd_voltage", &extra_voltage_state_)
+      );
+      state_interfaces.emplace_back(hardware_interface::StateInterface(
+        info_.joints.at(0).name, "rmd_current", &extra_current_state_)
+      );
+      state_interfaces.emplace_back(hardware_interface::StateInterface(
+        info_.joints.at(0).name, "rmd_current_phase_a", &extra_current_phase_a_state_)
+      );
+      state_interfaces.emplace_back(hardware_interface::StateInterface(
+        info_.joints.at(0).name, "rmd_current_phase_b", &extra_current_phase_b_state_)
+      );
+      state_interfaces.emplace_back(hardware_interface::StateInterface(
+        info_.joints.at(0).name, "rmd_current_phase_c", &extra_current_phase_c_state_)
+      );
+      state_interfaces.emplace_back(hardware_interface::StateInterface(
+        info_.joints.at(0).name, "rmd_error_code", &extra_error_code_state_)
+      );
+      state_interfaces.emplace_back(hardware_interface::StateInterface(
+        info_.joints.at(0).name, "rmd_brake", &extra_brake_state_)
+      );
+    }
     return state_interfaces;
   }
 
@@ -292,14 +315,16 @@ namespace myactuator_rmd_hardware {
     position_state_ = degToRad(feedback_.load().shaft_angle);
     velocity_state_ = degToRad(feedback_.load().shaft_speed);
     effort_state_ = currentToTorque(feedback_.load().current, torque_constant_);
-    temperature_state_ = static_cast<double>(feedback_.load().temperature);
-    error_code_state_ = static_cast<double>(motor_status1_.load().error_code);
-    brake_state_ = static_cast<double>(motor_status1_.load().is_brake_released);
-    voltage_state_ = static_cast<double>(motor_status1_.load().voltage);
-    current_state_ = static_cast<double>(feedback_.load().current);
-    current_phase_a_state_ = static_cast<double>(motor_status3_.load().current_phase_a);
-    current_phase_b_state_ = static_cast<double>(motor_status3_.load().current_phase_b);
-    current_phase_c_state_ = static_cast<double>(motor_status3_.load().current_phase_c);
+    if (ExtraThreadIsUsed_) {
+      extra_temperature_state_ = static_cast<double>(feedback_.load().temperature);
+      extra_error_code_state_ = static_cast<double>(motor_status1_.load().error_code);
+      extra_brake_state_ = static_cast<double>(motor_status1_.load().is_brake_released);
+      extra_voltage_state_ = static_cast<double>(motor_status1_.load().voltage);
+      extra_current_state_ = static_cast<double>(feedback_.load().current);
+      extra_current_phase_a_state_ = static_cast<double>(motor_status3_.load().current_phase_a);
+      extra_current_phase_b_state_ = static_cast<double>(motor_status3_.load().current_phase_b);
+      extra_current_phase_c_state_ = static_cast<double>(motor_status3_.load().current_phase_c);
+    }
     return hardware_interface::return_type::OK;
   }
 
@@ -321,23 +346,25 @@ namespace myactuator_rmd_hardware {
   }
 
   void MyActuatorRmdHardwareInterface::commandThread(std::chrono::milliseconds const& cycle_time) {
-    while (!stop_command_thread_) {
-      auto const now {std::chrono::steady_clock::now()};
-      auto const wakeup_time {now + cycle_time};
-      if (position_interface_running_) {
-        feedback_ = actuator_interface_->sendPositionAbsoluteSetpoint(command_thread_position_.load(), max_velocity_);
-      } else if (velocity_interface_running_) {
-        feedback_ = actuator_interface_->sendVelocitySetpoint(command_thread_velocity_.load());
-      } else if (effort_interface_running_) {
-        feedback_ = actuator_interface_->sendTorqueSetpoint(command_thread_effort_.load(), torque_constant_);
+      try {
+          while (!stop_command_thread_) {
+              auto const now {std::chrono::steady_clock::now()};
+              auto const wakeup_time {now + cycle_time};
+              if (position_interface_running_) {
+                  feedback_ = actuator_interface_->sendPositionAbsoluteSetpoint(command_thread_position_.load(), max_velocity_);
+              } else if (velocity_interface_running_) {
+                  feedback_ = actuator_interface_->sendVelocitySetpoint(command_thread_velocity_.load());
+              } else if (effort_interface_running_) {
+                  feedback_ = actuator_interface_->sendTorqueSetpoint(command_thread_effort_.load(), torque_constant_);
+              }
+              std::this_thread::sleep_until(wakeup_time);
+          }
+      } catch (const std::exception& e) {
+          RCLCPP_ERROR(getLogger(), "Exception in commandThread: %s", e.what());
+      } catch (...) {
+          RCLCPP_ERROR(getLogger(), "Unknown exception in commandThread");
       }
-      motor_status1_ = actuator_interface_->getMotorStatus1();
-      motor_status3_ = actuator_interface_->getMotorStatus3();
-      std::this_thread::sleep_until(wakeup_time);
-    }
-    return;
   }
-
   bool MyActuatorRmdHardwareInterface::startCommandThread(std::chrono::milliseconds const& cycle_time) {
     if (!command_thread_.joinable()) {
       command_thread_ = std::thread(&MyActuatorRmdHardwareInterface::commandThread, this, cycle_time);
@@ -347,13 +374,48 @@ namespace myactuator_rmd_hardware {
     }
     return true;
   }
-
   void MyActuatorRmdHardwareInterface::stopCommandThread() {
     if (command_thread_.joinable()) {
       stop_command_thread_.store(true);
       command_thread_.join();
     } else {
       RCLCPP_WARN(getLogger(), "Could not stop command thread: Not running!");
+    }
+    return;
+  }
+
+  void MyActuatorRmdHardwareInterface::extraThread(std::chrono::milliseconds const& cycle_time) {
+      try {
+          while (!stop_extra_thread_) {
+              auto const now {std::chrono::steady_clock::now()};
+              auto const wakeup_time {now + cycle_time};
+              motor_status1_ = actuator_interface_->getMotorStatus1();
+              motor_status3_ = actuator_interface_->getMotorStatus3();
+              std::this_thread::sleep_until(wakeup_time);
+          }
+      } catch (const std::exception& e) {
+          RCLCPP_ERROR(getLogger(), "Exception in extraThread: %s", e.what());
+      } catch (...) {
+          RCLCPP_ERROR(getLogger(), "Unknown exception in extraThread");
+      }
+  }
+  
+  bool MyActuatorRmdHardwareInterface::startExtraThread(std::chrono::milliseconds const& cycle_time) {
+    if (!extra_thread_.joinable()) {
+      extra_thread_ = std::thread(&MyActuatorRmdHardwareInterface::extraThread, this, cycle_time);
+    } else {
+      RCLCPP_WARN(getLogger(), "Could not start extra thread, extra thread already running!");
+      return false;
+    }
+    return true;
+  }
+  
+  void MyActuatorRmdHardwareInterface::stopExtraThread() {
+    if (extra_thread_.joinable()) {
+      stop_extra_thread_.store(true);
+      extra_thread_.join();
+    } else {
+      RCLCPP_WARN(getLogger(), "Could not stop extra thread: Not running!");
     }
     return;
   }

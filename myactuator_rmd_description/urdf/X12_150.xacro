@@ -6,6 +6,7 @@
   <xacro:macro name="X12_150" params="prefix joint_name simulation ifname actuator_id">
     <xacro:myactuator_rmd prefix="${prefix}" joint_name="${joint_name}" simulation="${simulation}"
                           ifname="${ifname}" actuator_id="${actuator_id}"
+                          extra_status_refresh_rate="${extra_status_refresh_rate}"
                           torque_constant="3.33"
                           limit_effort="150.0" limit_lower="${-pi}" limit_upper="${pi}"
                           limit_velocity="${100/60*2*pi}"

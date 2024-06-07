@@ -26,6 +26,8 @@ def generate_launch_description():
     actuator_id = LaunchConfiguration(actuator_id_parameter_name)
     ifname_parameter_name = 'ifname'
     ifname = LaunchConfiguration(ifname_parameter_name)
+    extra_status_refresh_rate_parameter_name = 'extra_status_refresh_rate'
+    extra_status_refresh_rate = LaunchConfiguration(extra_status_refresh_rate_parameter_name)
     controller_parameter_name = 'controller'
     controller = LaunchConfiguration(controller_parameter_name)
     rqt_controller_manager_parameter_name = 'rqt_controller_manager'
@@ -51,6 +53,11 @@ def generate_launch_description():
         ifname_parameter_name,
         default_value='can0',
         description='CAN interface name'
+    )
+    extra_status_refresh_rate_cmd = DeclareLaunchArgument(
+        extra_status_refresh_rate_parameter_name,
+        default_value='0',
+        description='Extra status refresh'
     )
     controller_cmd = DeclareLaunchArgument(
         controller_parameter_name,
@@ -92,7 +99,8 @@ def generate_launch_description():
             'actuator:=', actuator, ' ',
             'simulation:=', simulation, ' ',
             'ifname:=', ifname, ' ',
-            'actuator_id:=', actuator_id
+            'actuator_id:=', actuator_id, ' ',
+            'extra_status_refresh_rate:=', extra_status_refresh_rate
         ]
     )
     robot_description = {'robot_description': robot_description_content}
@@ -132,6 +140,7 @@ def generate_launch_description():
         package='controller_manager',
         executable='ros2_control_node',
         parameters=[robot_description, controllers],
+        #arguments=['--ros-args', '--log-level', 'debug'],
         output='screen',
         condition=UnlessCondition(simulation)
     )
@@ -188,6 +197,7 @@ def generate_launch_description():
     ld.add_action(actuator_cmd)
     ld.add_action(actuator_id_cmd)
     ld.add_action(ifname_cmd)
+    ld.add_action(extra_status_refresh_rate_cmd)
     ld.add_action(controller_cmd)
     ld.add_action(rqt_controller_manager_cmd)
     ld.add_action(rqt_joint_trajectory_controller_cmd)

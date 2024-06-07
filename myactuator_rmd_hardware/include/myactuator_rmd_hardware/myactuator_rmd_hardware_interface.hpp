@@ -248,6 +248,33 @@ namespace myactuator_rmd_hardware {
        *    Stop the asynchronous command thread used to communicate with the hardware
       */
       void stopCommandThread();
+
+      /**\fn extraThread
+       * \brief
+       *    The asynchronous extra status thread used to communicate with the hardware
+       *    that performs a combined read and write
+       * 
+       * \param[in] cycle_time
+       *    The cycle time that the asynchronous thread should run at
+      */
+      void extraThread(std::chrono::milliseconds const& cycle_time);
+
+      /**\fn startExtraThread
+       * \brief
+       *    Start the asynchronous extra status thread used to communicate with the hardware
+       * 
+       * \param[in] cycle_time
+       *    The cycle time that the asynchronous thread should run at
+       * \return
+       *    Boolean variable indicating successful start of the async thread or failure
+      */
+       bool startExtraThread(std::chrono::milliseconds const& cycle_time);
+
+      /**\fn stopExtraThread
+       * \brief
+       *    Stop the asynchronous extra thread used to communicate with the hardware
+      */
+      void stopExtraThread();
       
       std::string ifname_;
       std::uint32_t actuator_id_;
@@ -262,24 +289,29 @@ namespace myactuator_rmd_hardware {
       double velocity_command_;
       double effort_command_;
 
-      // Buffer status Actuator
-      double error_code_state_;
-      double temperature_state_;
-      double brake_state_;
-      double voltage_state_;
-      double current_state_;
-      double current_phase_a_state_;
-      double current_phase_b_state_;
-      double current_phase_c_state_;
+      // Buffer Extra status Actuator
+      double extra_error_code_state_;
+      double extra_temperature_state_;
+      double extra_brake_state_;
+      double extra_voltage_state_;
+      double extra_current_state_;
+      double extra_current_phase_a_state_;
+      double extra_current_phase_b_state_;
+      double extra_current_phase_c_state_;
       
       // The command thread reads and writes from the actuator cyclically
       std::thread command_thread_;
       std::chrono::milliseconds cycle_time_;
+      // The extra thread reads extra status from the actuator cyclically
+      std::thread extra_thread_;
+      std::chrono::milliseconds extra_cycle_time_;
+      bool ExtraThreadIsUsed_;
       // Never accessed by both threads at the same time
       std::unique_ptr<myactuator_rmd::CanDriver> driver_;
       std::unique_ptr<myactuator_rmd::ActuatorInterface> actuator_interface_;
       // Shared between the two threads
       std::atomic<bool> stop_command_thread_;
+      std::atomic<bool> stop_extra_thread_;
       std::atomic<myactuator_rmd::Feedback> feedback_;
       std::atomic<myactuator_rmd::MotorStatus1>motor_status1_;
       std::atomic<myactuator_rmd::MotorStatus3>motor_status3_;

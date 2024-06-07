@@ -19,6 +19,7 @@
   <xacro:macro name="myactuator_rmd" params="prefix joint_name 
                                              simulation ifname actuator_id
                                              torque_constant
+                                             extra_status_refresh_rate
                                              limit_effort limit_lower limit_upper
                                              limit_velocity
                                              visual
@@ -106,7 +107,7 @@
 
     <!-- ros2_control configuration -->
     <xacro:myactuator_rmd_ros2_control name="${prefix}${joint_name}_ros2_control" joint_name="${prefix}${joint_name}" simulation="${simulation}"
-                                       ifname="${ifname}" actuator_id="${actuator_id}" torque_constant="${torque_constant}"/>
+                                       ifname="${ifname}" actuator_id="${actuator_id}" torque_constant="${torque_constant}" extra_status_refresh_rate="${extra_status_refresh_rate}"/>
   </xacro:macro>
 
 </robot>

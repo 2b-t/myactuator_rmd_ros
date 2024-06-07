@@ -196,7 +196,7 @@ bool MyActuatorRmdStateBroadcaster::init_motor_data()
   for (const auto & name_ifv : name_if_value_mapping_)
   {
     const auto & interfaces_and_values = name_ifv.second;
-    if (has_any_key(interfaces_and_values, {"rmd_error", 
+    if (has_any_key(interfaces_and_values, {"rmd_error_code", 
                                             "rmd_temperature", 
                                             "rmd_brake", 
                                             "rmd_voltage",
@@ -220,7 +220,7 @@ bool MyActuatorRmdStateBroadcaster::init_motor_data()
       if (name_if_value_mapping_.count(extra_motor_name) == 0)
       {
         name_if_value_mapping_[extra_motor_name] = {
-                                                    {"rmd_error", 0.0}, 
+                                                    {"rmd_error_code", 0.0}, 
                                                     {"rmd_temperature", 0.0}, 
                                                     {"rmd_brake", 0.0},
                                                     {"rmd_voltage", 0.0},
