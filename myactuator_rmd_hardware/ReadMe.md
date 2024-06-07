@@ -18,6 +18,11 @@ For using it add the following lines to your URDF refering to the joint of inter
     <param name="ifname">${ifname}</param>
     <param name="actuator_id">${actuator_id}</param>
     <param name="torque_constant">${torque_constant}</param>
+    <!-- Optional: Low-pass filters for velocity and effort (0 < alpha <= 1); defaults to no filter -->
+    <param name="velocity_alpha">0.1</param>
+    <param name="effort_alpha">0.1</param>
+    <!-- Optional: Cycle time of the asynchronous thread; defaults to 1ms (1000Hz) -->
+    <param name="cycle_time">1</param>
   </hardware>
   <joint name="${joint_name}">
     <command_interface name="position"/>
@@ -30,5 +35,11 @@ For using it add the following lines to your URDF refering to the joint of inter
 </ros2_control>
 ```
 
-The `ifname` has to correspond to the name of the CAN interface as shown by `$ ifconfig` (e.g. `can0`) and the `actuator_id` to the ID of the actuator (e.g. `1`). The `torque_constant` is required for controlling the actuator over its effort interface and depends on the actuator type. For more information refer to the examples inside `myactuator_rmd_description`.
+The `ifname` has to correspond to the name of the CAN interface as shown by `$ ifconfig` (e.g. `can0`) and the `actuator_id` to the ID of the actuator (e.g. `1`). The `torque_constant` is required for controlling the actuator over its effort interface and depends on the actuator type. Furthermore optional low-pass filters (by means of the filter coefficient `alpha`) for the read velocity and effort can be specified as well as the cycle-time for the asynchronous thread interfacing the actuator.
+
+| Without low pass filter (corresponds to `alpha = 1.0`)       | With low pass filter (`alpha = 0.1`)                         |
+| ------------------------------------------------------------ | ------------------------------------------------------------ |
+| ![Effort and velocity without low-pass filter](./media/without_low_pass_filter.png) | ![Effort and velocity with low-pass filter](./media/with_low_pass_filter.png) |
+
+For more information refer to the examples inside `myactuator_rmd_description`.
 

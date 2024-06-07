@@ -13,7 +13,9 @@ find_package(pluginlib REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclcpp_lifecycle REQUIRED)
 
-add_library(${PROJECT_NAME} src/myactuator_rmd_hardware_interface.cpp)
+add_library(${PROJECT_NAME}
+  src/myactuator_rmd_hardware_interface.cpp
+)
 target_compile_features(${PROJECT_NAME} PUBLIC c_std_99 cxx_std_17)
 target_include_directories(${PROJECT_NAME} PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
