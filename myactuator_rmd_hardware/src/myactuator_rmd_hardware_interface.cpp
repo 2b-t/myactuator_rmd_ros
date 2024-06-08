@@ -238,8 +238,7 @@ namespace myactuator_rmd_hardware {
   }
 
   hardware_interface::return_type MyActuatorRmdHardwareInterface::prepare_command_mode_switch(
-    std::vector<std::string> const& start_interfaces,
-    std::vector<std::string> const& stop_interfaces) {
+    std::vector<std::string> const& start_interfaces, std::vector<std::string> const& stop_interfaces) {
     bool position_interface_claimed {position_interface_running_.load()};
     bool velocity_interface_claimed {velocity_interface_running_.load()};
     bool effort_interface_claimed {effort_interface_running_.load()};
@@ -283,8 +282,7 @@ namespace myactuator_rmd_hardware {
   }
 
   hardware_interface::return_type MyActuatorRmdHardwareInterface::perform_command_mode_switch(
-    std::vector<std::string> const& start_interfaces,
-    std::vector<std::string> const& stop_interfaces) {
+    std::vector<std::string> const& start_interfaces, std::vector<std::string> const& stop_interfaces) {
     for (auto const& stop_interface: stop_interfaces) {
       if (stop_interface == info_.joints.at(0).name + "/" + hardware_interface::HW_IF_POSITION) {
         position_interface_running_.store(false);
