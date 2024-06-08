@@ -31,6 +31,7 @@
 #include <rclcpp/time.hpp>
 #include <rclcpp_lifecycle/state.hpp>
 
+#include "myactuator_rmd_hardware/low_pass_filter.hpp"
 #include "myactuator_rmd_hardware/visibility_control.hpp"
 
 
@@ -221,7 +222,7 @@ namespace myactuator_rmd_hardware {
       */
       static rclcpp::Logger getLogger();
 
-      /**\fn commandThread
+      /**\fn asyncThread
        * \brief
        *    The asynchronous command thread used to communicate with the hardware
        *    that performs a combined read and write
@@ -229,9 +230,9 @@ namespace myactuator_rmd_hardware {
        * \param[in] cycle_time
        *    The cycle time that the asynchronous thread should run at
       */
-      void commandThread(std::chrono::milliseconds const& cycle_time);
+      void asyncThread(std::chrono::milliseconds const& cycle_time);
 
-      /**\fn startCommandThread
+      /**\fn startAsyncThread
        * \brief
        *    Start the asynchronous command thread used to communicate with the hardware
        * 
@@ -241,13 +242,13 @@ namespace myactuator_rmd_hardware {
        *    Boolean variable indicating successful start of the async thread or failure
       */
       [[nodiscard]]
-      bool startCommandThread(std::chrono::milliseconds const& cycle_time);
+      bool startAsyncThread(std::chrono::milliseconds const& cycle_time);
       
-      /**\fn stopCommandThread
+      /**\fn stopAsyncThread
        * \brief
        *    Stop the asynchronous command thread used to communicate with the hardware
       */
-      void stopCommandThread();
+      void stopAsyncThread();
       
       std::string ifname_;
       std::uint32_t actuator_id_;
@@ -261,19 +262,25 @@ namespace myactuator_rmd_hardware {
       double position_command_;
       double velocity_command_;
       double effort_command_;
+      std::unique_ptr<LowPassFilter> velocity_low_pass_filter_;
+      std::unique_ptr<LowPassFilter> effort_low_pass_filter_;
 
       // The command thread reads and writes from the actuator cyclically
-      std::thread command_thread_;
+      std::thread async_thread_;
       std::chrono::milliseconds cycle_time_;
       // Never accessed by both threads at the same time
       std::unique_ptr<myactuator_rmd::CanDriver> driver_;
       std::unique_ptr<myactuator_rmd::ActuatorInterface> actuator_interface_;
+      myactuator_rmd::Feedback feedback_;
       // Shared between the two threads
-      std::atomic<bool> stop_command_thread_;
-      std::atomic<myactuator_rmd::Feedback> feedback_;
-      std::atomic<double> command_thread_position_;
-      std::atomic<double> command_thread_velocity_;
-      std::atomic<double> command_thread_effort_;
+      std::atomic<bool> stop_async_thread_;
+      
+      std::atomic<double> async_position_state_;
+      std::atomic<double> async_velocity_state_;
+      std::atomic<double> async_effort_state_;
+      std::atomic<double> async_position_command_;
+      std::atomic<double> async_velocity_command_;
+      std::atomic<double> async_effort_command_;
       std::atomic<bool> position_interface_running_;
       std::atomic<bool> velocity_interface_running_;
       std::atomic<bool> effort_interface_running_;
