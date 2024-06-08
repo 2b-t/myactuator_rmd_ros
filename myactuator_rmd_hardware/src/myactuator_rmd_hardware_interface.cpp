@@ -80,20 +80,20 @@ namespace myactuator_rmd_hardware {
     if (info_.hardware_parameters.find("cycle_time") != info_.hardware_parameters.end()) {
       cycle_time_ = std::chrono::milliseconds(std::stol(info_.hardware_parameters["cycle_time"]));
     } else {
-      if (info_.hardware_parameters.find("extra_status_refresh_rate") != info_.hardware_parameters.end()) {
+    cycle_time_ = std::chrono::milliseconds(1);
+      RCLCPP_INFO(getLogger(), "Cycle time not set, defaulting to '%ld' ms.", cycle_time_.count());
+    }
+    if (info_.hardware_parameters.find("extra_status_refresh_rate") != info_.hardware_parameters.end()) {
       extra_cycle_time_ = std::chrono::milliseconds(std::stoi(info_.hardware_parameters["extra_status_refresh_rate"]));
     } else {
       extra_cycle_time_ = std::chrono::milliseconds::zero();
       RCLCPP_INFO(getLogger(), "Extra status refresh rate not set, defaulting to 0 milliseconds");
     }
     if (extra_cycle_time_ != std::chrono::milliseconds::zero()){
-      ExtraThreadIsUsed_ = true;
+      ExtraStatusIsUsed_ = true;
     } else {
-      ExtraThreadIsUsed_ = false;
+      ExtraStatusIsUsed_ = false;
       RCLCPP_INFO(getLogger(), "Extra status refresh rate is 0 milliseconds, it will not be implemented!");
-    }
-    cycle_time_ = std::chrono::milliseconds(1);
-      RCLCPP_INFO(getLogger(), "Cycle time not set, defaulting to '%ld' ms.", cycle_time_.count());
     }
 
     driver_ = std::make_unique<myactuator_rmd::CanDriver>(ifname_);
@@ -109,18 +109,10 @@ namespace myactuator_rmd_hardware {
       RCLCPP_FATAL(getLogger(), "Failed to start async thread!");
       return CallbackReturn::ERROR;
     }
-    stop_extra_thread_.store(false);
-    if (ExtraThreadIsUsed_) {
-      if (!startExtraThread(extra_cycle_time_)) {
-        RCLCPP_FATAL(getLogger(), "Failed to start extra status thread!");
-        return CallbackReturn::ERROR;
-      }
-    }
     return CallbackReturn::SUCCESS;
   }
       
   CallbackReturn MyActuatorRmdHardwareInterface::on_cleanup(rclcpp_lifecycle::State const& /*previous_state*/) {
-    stopExtraThread();
     stopAsyncThread();
     if (actuator_interface_) {
       actuator_interface_->shutdownMotor();
@@ -129,7 +121,6 @@ namespace myactuator_rmd_hardware {
   }
   
   CallbackReturn MyActuatorRmdHardwareInterface::on_shutdown(rclcpp_lifecycle::State const& /*previous_state*/) {
-    stopExtraThread();
     stopAsyncThread();
     if (actuator_interface_) {
       actuator_interface_->shutdownMotor();
@@ -143,7 +134,6 @@ namespace myactuator_rmd_hardware {
   }
 
   CallbackReturn MyActuatorRmdHardwareInterface::on_deactivate(rclcpp_lifecycle::State const& /*previous_state*/) {
-    stopExtraThread();
     stopAsyncThread();
     if (actuator_interface_) {
       actuator_interface_->stopMotor();
@@ -153,7 +143,6 @@ namespace myactuator_rmd_hardware {
   }
   
   CallbackReturn MyActuatorRmdHardwareInterface::on_error(rclcpp_lifecycle::State const& /*previous_state*/) {
-    stopExtraThread();
     stopAsyncThread();
     if (actuator_interface_) {
       actuator_interface_->stopMotor();
@@ -249,7 +238,7 @@ namespace myactuator_rmd_hardware {
     state_interfaces.emplace_back(hardware_interface::StateInterface(
       info_.joints.at(0).name, hardware_interface::HW_IF_EFFORT, &effort_state_)
     );
-    if (ExtraThreadIsUsed_) {
+    if (ExtraStatusIsUsed_) {
       state_interfaces.emplace_back(hardware_interface::StateInterface(
         info_.joints.at(0).name, "rmd_temperature", &extra_temperature_state_)
       );
@@ -335,12 +324,12 @@ namespace myactuator_rmd_hardware {
     position_state_ = async_position_state_.load();
     velocity_state_ = async_velocity_state_.load();
     effort_state_ = async_effort_state_.load();
-    if (ExtraThreadIsUsed_) {
-      extra_temperature_state_ = static_cast<double>(feedback_.load().temperature);
+    if (ExtraStatusIsUsed_) {
+      extra_temperature_state_ = static_cast<double>(motor_status1_.load().temperature);
       extra_error_code_state_ = static_cast<double>(motor_status1_.load().error_code);
       extra_brake_state_ = static_cast<double>(motor_status1_.load().is_brake_released);
       extra_voltage_state_ = static_cast<double>(motor_status1_.load().voltage);
-      extra_current_state_ = static_cast<double>(feedback_.load().current);
+      extra_current_state_ = static_cast<double>(feedback_.current);
       extra_current_phase_a_state_ = static_cast<double>(motor_status3_.load().current_phase_a);
       extra_current_phase_b_state_ = static_cast<double>(motor_status3_.load().current_phase_b);
       extra_current_phase_c_state_ = static_cast<double>(motor_status3_.load().current_phase_c);
@@ -365,7 +354,8 @@ namespace myactuator_rmd_hardware {
     return rclcpp::get_logger("MyActuatorRmdHardwareInterface");
   }
 
-  void MyActuatorRmdHardwareInterface::asyncThread(std::chrono::milliseconds const& cycle_time) {
+  void MyActuatorRmdHardwareInterface::asyncThread(std::chrono::milliseconds const& cycle_time) { 
+    auto extra_wakeup_time {std::chrono::steady_clock::now() + extra_cycle_time_};
     while (!stop_async_thread_) {
       auto const now {std::chrono::steady_clock::now()};
       auto const wakeup_time {now + cycle_time};
@@ -390,6 +380,13 @@ namespace myactuator_rmd_hardware {
       async_velocity_state_.store(degToRad(velocity_state));
       async_effort_state_.store(currentToTorque(current_state, torque_constant_));
 
+      if (ExtraStatusIsUsed_){
+        if (extra_wakeup_time <= now){
+          motor_status1_ = actuator_interface_->getMotorStatus1();
+          motor_status3_ = actuator_interface_->getMotorStatus3();
+          extra_wakeup_time = (std::chrono::steady_clock::now() + extra_cycle_time_);
+        }
+      }
       std::this_thread::sleep_until(wakeup_time);
     }
     return;
@@ -414,43 +411,6 @@ namespace myactuator_rmd_hardware {
     }
     return;
   }
-
-  void MyActuatorRmdHardwareInterface::extraThread(std::chrono::milliseconds const& cycle_time) {
-      try {
-          while (!stop_extra_thread_) {
-              auto const now {std::chrono::steady_clock::now()};
-              auto const wakeup_time {now + cycle_time};
-              motor_status1_ = actuator_interface_->getMotorStatus1();
-              motor_status3_ = actuator_interface_->getMotorStatus3();
-              std::this_thread::sleep_until(wakeup_time);
-          }
-      } catch (const std::exception& e) {
-          RCLCPP_ERROR(getLogger(), "Exception in extraThread: %s", e.what());
-      } catch (...) {
-          RCLCPP_ERROR(getLogger(), "Unknown exception in extraThread");
-      }
-  }
-  
-  bool MyActuatorRmdHardwareInterface::startExtraThread(std::chrono::milliseconds const& cycle_time) {
-    if (!extra_thread_.joinable()) {
-      extra_thread_ = std::thread(&MyActuatorRmdHardwareInterface::extraThread, this, cycle_time);
-    } else {
-      RCLCPP_WARN(getLogger(), "Could not start extra thread, extra thread already running!");
-      return false;
-    }
-    return true;
-  }
-  
-  void MyActuatorRmdHardwareInterface::stopExtraThread() {
-    if (extra_thread_.joinable()) {
-      stop_extra_thread_.store(true);
-      extra_thread_.join();
-    } else {
-      RCLCPP_WARN(getLogger(), "Could not stop extra thread: Not running!");
-    }
-    return;
-  }
-
 }  // namespace myactuator_rmd_hardware
 
 #include <pluginlib/class_list_macros.hpp>

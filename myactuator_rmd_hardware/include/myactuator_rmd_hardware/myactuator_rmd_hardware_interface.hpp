@@ -249,33 +249,6 @@ namespace myactuator_rmd_hardware {
        *    Stop the asynchronous command thread used to communicate with the hardware
       */
       void stopAsyncThread();
-
-      /**\fn extraThread
-       * \brief
-       *    The asynchronous extra status thread used to communicate with the hardware
-       *    that performs a combined read and write
-       * 
-       * \param[in] cycle_time
-       *    The cycle time that the asynchronous thread should run at
-      */
-      void extraThread(std::chrono::milliseconds const& cycle_time);
-
-      /**\fn startExtraThread
-       * \brief
-       *    Start the asynchronous extra status thread used to communicate with the hardware
-       * 
-       * \param[in] cycle_time
-       *    The cycle time that the asynchronous thread should run at
-       * \return
-       *    Boolean variable indicating successful start of the async thread or failure
-      */
-       bool startExtraThread(std::chrono::milliseconds const& cycle_time);
-
-      /**\fn stopExtraThread
-       * \brief
-       *    Stop the asynchronous extra thread used to communicate with the hardware
-      */
-      void stopExtraThread();
       
       std::string ifname_;
       std::uint32_t actuator_id_;
@@ -305,10 +278,8 @@ namespace myactuator_rmd_hardware {
       // The command thread reads and writes from the actuator cyclically
       std::thread async_thread_;
       std::chrono::milliseconds cycle_time_;
-      // The extra thread reads extra status from the actuator cyclically
-      std::thread extra_thread_;
       std::chrono::milliseconds extra_cycle_time_;
-      bool ExtraThreadIsUsed_;
+      bool ExtraStatusIsUsed_;
       // Never accessed by both threads at the same time
       std::unique_ptr<myactuator_rmd::CanDriver> driver_;
       std::unique_ptr<myactuator_rmd::ActuatorInterface> actuator_interface_;
