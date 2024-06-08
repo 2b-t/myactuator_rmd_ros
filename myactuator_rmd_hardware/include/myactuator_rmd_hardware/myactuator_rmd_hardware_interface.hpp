@@ -185,7 +185,7 @@ namespace myactuator_rmd_hardware {
       */
       hardware_interface::return_type perform_command_mode_switch(std::vector<std::string> const& start_interfaces,
         std::vector<std::string> const& stop_interfaces) override;
-      
+
       /**\fn read
        * \brief
        *    Read the current state of the actuator
