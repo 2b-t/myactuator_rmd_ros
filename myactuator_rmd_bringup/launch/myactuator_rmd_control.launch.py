@@ -140,7 +140,7 @@ def generate_launch_description():
         package='controller_manager',
         executable='ros2_control_node',
         parameters=[robot_description, controllers],
-        #arguments=['--ros-args', '--log-level', 'debug'],
+        arguments=['--ros-args', '--log-level', 'debug'],
         output='screen',
         condition=UnlessCondition(simulation)
     )

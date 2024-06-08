@@ -28,7 +28,7 @@
 namespace myactuator_rmd_hardware {
 
   using CallbackReturn = MyActuatorRmdHardwareInterface::CallbackReturn;
-
+  
   MyActuatorRmdHardwareInterface::~MyActuatorRmdHardwareInterface() {
     // If the controller manager is shutdown with Ctrl + C the on_deactivate methods won't be called!
     // We therefore shut down the actuator here.
@@ -80,20 +80,8 @@ namespace myactuator_rmd_hardware {
     if (info_.hardware_parameters.find("cycle_time") != info_.hardware_parameters.end()) {
       cycle_time_ = std::chrono::milliseconds(std::stol(info_.hardware_parameters["cycle_time"]));
     } else {
-    cycle_time_ = std::chrono::milliseconds(1);
+      cycle_time_ = std::chrono::milliseconds(1);
       RCLCPP_INFO(getLogger(), "Cycle time not set, defaulting to '%ld' ms.", cycle_time_.count());
-    }
-    if (info_.hardware_parameters.find("extra_status_refresh_rate") != info_.hardware_parameters.end()) {
-      extra_cycle_time_ = std::chrono::milliseconds(std::stoi(info_.hardware_parameters["extra_status_refresh_rate"]));
-    } else {
-      extra_cycle_time_ = std::chrono::milliseconds::zero();
-      RCLCPP_INFO(getLogger(), "Extra status refresh rate not set, defaulting to 0 milliseconds");
-    }
-    if (extra_cycle_time_ != std::chrono::milliseconds::zero()){
-      ExtraStatusIsUsed_ = true;
-    } else {
-      ExtraStatusIsUsed_ = false;
-      RCLCPP_INFO(getLogger(), "Extra status refresh rate is 0 milliseconds, it will not be implemented!");
     }
 
     driver_ = std::make_unique<myactuator_rmd::CanDriver>(ifname_);
@@ -224,6 +212,19 @@ namespace myactuator_rmd_hardware {
       return CallbackReturn::ERROR;
     }
 
+    if (info_.hardware_parameters.find("extra_status_refresh_rate") != info_.hardware_parameters.end()) {
+      extra_cycle_time_ = std::chrono::milliseconds(std::stoi(info_.hardware_parameters["extra_status_refresh_rate"]));
+    } else {
+      extra_cycle_time_ = std::chrono::milliseconds::zero();
+      RCLCPP_INFO(getLogger(), "Extra status refresh rate not set, defaulting to 0 milliseconds");
+    }
+    if (extra_cycle_time_ != std::chrono::milliseconds::zero()){
+      ExtraStatusIsUsed_ = true;
+    } else {
+      ExtraStatusIsUsed_ = false;
+      RCLCPP_INFO(getLogger(), "Extra status refresh rate is 0 milliseconds, it will not be implemented!");
+    }
+
     return CallbackReturn::SUCCESS;
   }
 
@@ -239,6 +240,7 @@ namespace myactuator_rmd_hardware {
       info_.joints.at(0).name, hardware_interface::HW_IF_EFFORT, &effort_state_)
     );
     if (ExtraStatusIsUsed_) {
+      RCLCPP_INFO(getLogger(), "Extra Status set!");
       state_interfaces.emplace_back(hardware_interface::StateInterface(
         info_.joints.at(0).name, "rmd_temperature", &extra_temperature_state_)
       );
@@ -354,7 +356,7 @@ namespace myactuator_rmd_hardware {
     return rclcpp::get_logger("MyActuatorRmdHardwareInterface");
   }
 
-  void MyActuatorRmdHardwareInterface::asyncThread(std::chrono::milliseconds const& cycle_time) { 
+  void MyActuatorRmdHardwareInterface::asyncThread(std::chrono::milliseconds const& cycle_time) {
     auto extra_wakeup_time {std::chrono::steady_clock::now() + extra_cycle_time_};
     while (!stop_async_thread_) {
       auto const now {std::chrono::steady_clock::now()};

@@ -287,7 +287,6 @@ namespace myactuator_rmd_hardware {
       // Shared between the two threads
       std::atomic<bool> stop_async_thread_;
       
-      std::atomic<bool> stop_extra_thread_;
       std::atomic<double> async_position_state_;
       std::atomic<double> async_velocity_state_;
       std::atomic<myactuator_rmd::MotorStatus1>motor_status1_;
