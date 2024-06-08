@@ -14,7 +14,7 @@ from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
 from launch.conditions import IfCondition, UnlessCondition
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import (
-    Command, FindExecutable, LaunchConfiguration, PathJoinSubstitution
+    Command, FindExecutable, LaunchConfiguration, PathJoinSubstitution, PythonExpression
 )
 from launch_ros.actions import Node
 
@@ -127,7 +127,8 @@ def generate_launch_description():
     myactuator_rmd_state_broadcaster_spawner_node = Node(
         package='controller_manager',
         executable='spawner',
-        arguments=['myactuator_rmd_state_broadcaster', '--controller-manager', '/controller_manager']
+        arguments=['myactuator_rmd_state_broadcaster', '--controller-manager', '/controller_manager'],
+        condition=IfCondition(PythonExpression([extra_status_refresh_rate, ' != 0']))
     )
     controllers = PathJoinSubstitution(
         [
@@ -140,7 +141,6 @@ def generate_launch_description():
         package='controller_manager',
         executable='ros2_control_node',
         parameters=[robot_description, controllers],
-        arguments=['--ros-args', '--log-level', 'debug'],
         output='screen',
         condition=UnlessCondition(simulation)
     )
