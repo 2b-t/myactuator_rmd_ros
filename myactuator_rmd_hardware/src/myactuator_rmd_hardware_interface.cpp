@@ -1,7 +1,5 @@
 #include "myactuator_rmd_hardware/myactuator_rmd_hardware_interface.hpp"
 
-#include <iostream>
-
 #include <atomic>
 #include <chrono>
 #include <limits>
@@ -24,6 +22,7 @@
 
 
 #include "myactuator_rmd_hardware/conversions.hpp"
+#include "myactuator_rmd_hardware/low_pass_filter.hpp"
 
 
 namespace myactuator_rmd_hardware {
@@ -60,9 +59,28 @@ namespace myactuator_rmd_hardware {
       max_velocity_ = std::stod(info_.hardware_parameters["max_velocity"]);
     } else {
       max_velocity_ = 720.0;
-      RCLCPP_INFO(getLogger(), "Max velocity not set, defaulting to '%f'", max_velocity_);
+      RCLCPP_INFO(getLogger(), "Max velocity not set, defaulting to '%f'.", max_velocity_);
     }
-    if (info_.hardware_parameters.find("extra_status_refresh_rate") != info_.hardware_parameters.end()) {
+    if (info_.hardware_parameters.find("velocity_alpha") != info_.hardware_parameters.end()) {
+      auto const velocity_alpha {std::stod(info_.hardware_parameters["velocity_alpha"])};
+      velocity_low_pass_filter_ = std::make_unique<LowPassFilter>(velocity_alpha);
+      RCLCPP_INFO(getLogger(), "Using velocity low-pass filter with filter constant '%f'.", velocity_alpha);
+    } else {
+      velocity_low_pass_filter_ = nullptr;
+      RCLCPP_INFO(getLogger(), "Not using velocity low-pass filter.");
+    }
+    if (info_.hardware_parameters.find("effort_alpha") != info_.hardware_parameters.end()) {
+      auto const effort_alpha {std::stod(info_.hardware_parameters["effort_alpha"])};
+      effort_low_pass_filter_ = std::make_unique<LowPassFilter>(effort_alpha);
+      RCLCPP_INFO(getLogger(), "Using effort low-pass filter with filter constant '%f'.", effort_alpha);
+    } else {
+      effort_low_pass_filter_ = nullptr;
+      RCLCPP_INFO(getLogger(), "Not using effort low-pass filter.");
+    }
+    if (info_.hardware_parameters.find("cycle_time") != info_.hardware_parameters.end()) {
+      cycle_time_ = std::chrono::milliseconds(std::stol(info_.hardware_parameters["cycle_time"]));
+    } else {
+      if (info_.hardware_parameters.find("extra_status_refresh_rate") != info_.hardware_parameters.end()) {
       extra_cycle_time_ = std::chrono::milliseconds(std::stoi(info_.hardware_parameters["extra_status_refresh_rate"]));
     } else {
       extra_cycle_time_ = std::chrono::milliseconds::zero();
@@ -75,6 +93,8 @@ namespace myactuator_rmd_hardware {
       RCLCPP_INFO(getLogger(), "Extra status refresh rate is 0 milliseconds, it will not be implemented!");
     }
     cycle_time_ = std::chrono::milliseconds(1);
+      RCLCPP_INFO(getLogger(), "Cycle time not set, defaulting to '%ld' ms.", cycle_time_.count());
+    }
 
     driver_ = std::make_unique<myactuator_rmd::CanDriver>(ifname_);
     actuator_interface_ = std::make_unique<myactuator_rmd::ActuatorInterface>(*driver_, actuator_id_);
@@ -84,9 +104,9 @@ namespace myactuator_rmd_hardware {
     }
     std::string const motor_model {actuator_interface_->getMotorModel()};
     RCLCPP_INFO(getLogger(), "Started actuator interface for actuator model '%s'!", motor_model.c_str());
-    stop_command_thread_.store(false);
-    if (!startCommandThread(cycle_time_)) {
-      RCLCPP_FATAL(getLogger(), "Failed to start command thread!");
+    stop_async_thread_.store(false);
+    if (!startAsyncThread(cycle_time_)) {
+      RCLCPP_FATAL(getLogger(), "Failed to start async thread!");
       return CallbackReturn::ERROR;
     }
     stop_extra_thread_.store(false);
@@ -101,7 +121,7 @@ namespace myactuator_rmd_hardware {
       
   CallbackReturn MyActuatorRmdHardwareInterface::on_cleanup(rclcpp_lifecycle::State const& /*previous_state*/) {
     stopExtraThread();
-    stopCommandThread();
+    stopAsyncThread();
     if (actuator_interface_) {
       actuator_interface_->shutdownMotor();
     }
@@ -110,7 +130,7 @@ namespace myactuator_rmd_hardware {
   
   CallbackReturn MyActuatorRmdHardwareInterface::on_shutdown(rclcpp_lifecycle::State const& /*previous_state*/) {
     stopExtraThread();
-    stopCommandThread();
+    stopAsyncThread();
     if (actuator_interface_) {
       actuator_interface_->shutdownMotor();
     }
@@ -124,7 +144,7 @@ namespace myactuator_rmd_hardware {
 
   CallbackReturn MyActuatorRmdHardwareInterface::on_deactivate(rclcpp_lifecycle::State const& /*previous_state*/) {
     stopExtraThread();
-    stopCommandThread();
+    stopAsyncThread();
     if (actuator_interface_) {
       actuator_interface_->stopMotor();
     }
@@ -134,7 +154,7 @@ namespace myactuator_rmd_hardware {
   
   CallbackReturn MyActuatorRmdHardwareInterface::on_error(rclcpp_lifecycle::State const& /*previous_state*/) {
     stopExtraThread();
-    stopCommandThread();
+    stopAsyncThread();
     if (actuator_interface_) {
       actuator_interface_->stopMotor();
       actuator_interface_->reset();
@@ -312,9 +332,9 @@ namespace myactuator_rmd_hardware {
 
   hardware_interface::return_type MyActuatorRmdHardwareInterface::read(rclcpp::Time const& /*time*/,
     rclcpp::Duration const& /*period*/) {
-    position_state_ = degToRad(feedback_.load().shaft_angle);
-    velocity_state_ = degToRad(feedback_.load().shaft_speed);
-    effort_state_ = currentToTorque(feedback_.load().current, torque_constant_);
+    position_state_ = async_position_state_.load();
+    velocity_state_ = async_velocity_state_.load();
+    effort_state_ = async_effort_state_.load();
     if (ExtraThreadIsUsed_) {
       extra_temperature_state_ = static_cast<double>(feedback_.load().temperature);
       extra_error_code_state_ = static_cast<double>(motor_status1_.load().error_code);
@@ -332,11 +352,11 @@ namespace myactuator_rmd_hardware {
     rclcpp::Duration const& /*period*/) {
     // TODO: Make sure that all commands are finite
     if (position_interface_running_) {
-      command_thread_position_.store(radToDeg(position_command_));
+      async_position_command_.store(position_command_);
     } else if (velocity_interface_running_) {
-      command_thread_velocity_.store(radToDeg(velocity_command_));
+      async_velocity_command_.store(velocity_command_);
     } else if (effort_interface_running_) {
-      command_thread_effort_.store(effort_command_);
+      async_effort_command_.store(effort_command_);
     }
     return hardware_interface::return_type::OK;
   }
@@ -345,39 +365,50 @@ namespace myactuator_rmd_hardware {
     return rclcpp::get_logger("MyActuatorRmdHardwareInterface");
   }
 
-  void MyActuatorRmdHardwareInterface::commandThread(std::chrono::milliseconds const& cycle_time) {
-      try {
-          while (!stop_command_thread_) {
-              auto const now {std::chrono::steady_clock::now()};
-              auto const wakeup_time {now + cycle_time};
-              if (position_interface_running_) {
-                  feedback_ = actuator_interface_->sendPositionAbsoluteSetpoint(command_thread_position_.load(), max_velocity_);
-              } else if (velocity_interface_running_) {
-                  feedback_ = actuator_interface_->sendVelocitySetpoint(command_thread_velocity_.load());
-              } else if (effort_interface_running_) {
-                  feedback_ = actuator_interface_->sendTorqueSetpoint(command_thread_effort_.load(), torque_constant_);
-              }
-              std::this_thread::sleep_until(wakeup_time);
-          }
-      } catch (const std::exception& e) {
-          RCLCPP_ERROR(getLogger(), "Exception in commandThread: %s", e.what());
-      } catch (...) {
-          RCLCPP_ERROR(getLogger(), "Unknown exception in commandThread");
+  void MyActuatorRmdHardwareInterface::asyncThread(std::chrono::milliseconds const& cycle_time) {
+    while (!stop_async_thread_) {
+      auto const now {std::chrono::steady_clock::now()};
+      auto const wakeup_time {now + cycle_time};
+      if (position_interface_running_) {
+        feedback_ = actuator_interface_->sendPositionAbsoluteSetpoint(radToDeg(async_position_command_.load()), max_velocity_);
+      } else if (velocity_interface_running_) {
+        feedback_ = actuator_interface_->sendVelocitySetpoint(radToDeg(async_velocity_command_.load()));
+      } else if (effort_interface_running_) {
+        feedback_ = actuator_interface_->sendTorqueSetpoint(async_effort_command_.load(), torque_constant_);
       }
+
+      double const position_state {feedback_.shaft_angle};
+      double velocity_state {feedback_.shaft_speed};
+      if (velocity_low_pass_filter_) {
+        velocity_state = velocity_low_pass_filter_->apply(velocity_state);
+      }
+      double current_state {feedback_.current};
+      if (effort_low_pass_filter_) {
+        current_state = effort_low_pass_filter_->apply(current_state);
+      }
+      async_position_state_.store(degToRad(position_state));
+      async_velocity_state_.store(degToRad(velocity_state));
+      async_effort_state_.store(currentToTorque(current_state, torque_constant_));
+
+      std::this_thread::sleep_until(wakeup_time);
+    }
+    return;
   }
-  bool MyActuatorRmdHardwareInterface::startCommandThread(std::chrono::milliseconds const& cycle_time) {
-    if (!command_thread_.joinable()) {
-      command_thread_ = std::thread(&MyActuatorRmdHardwareInterface::commandThread, this, cycle_time);
+
+  bool MyActuatorRmdHardwareInterface::startAsyncThread(std::chrono::milliseconds const& cycle_time) {
+    if (!async_thread_.joinable()) {
+      async_thread_ = std::thread(&MyActuatorRmdHardwareInterface::asyncThread, this, cycle_time);
     } else {
       RCLCPP_WARN(getLogger(), "Could not start command thread, command thread already running!");
       return false;
     }
     return true;
   }
-  void MyActuatorRmdHardwareInterface::stopCommandThread() {
-    if (command_thread_.joinable()) {
-      stop_command_thread_.store(true);
-      command_thread_.join();
+
+  void MyActuatorRmdHardwareInterface::stopAsyncThread() {
+    if (async_thread_.joinable()) {
+      stop_async_thread_.store(true);
+      async_thread_.join();
     } else {
       RCLCPP_WARN(getLogger(), "Could not stop command thread: Not running!");
     }

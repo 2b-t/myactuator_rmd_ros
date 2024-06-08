@@ -2,7 +2,9 @@
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro">
 
   <!-- ros2_control configuration for a given joint -->
-  <xacro:macro name="myactuator_rmd_ros2_control" params="name joint_name simulation ifname actuator_id torque_constant extra_status_refresh_rate">
+  <xacro:macro name="myactuator_rmd_ros2_control" params="name joint_name simulation ifname actuator_id
+                                                          velocity_alpha effort_alpha torque_constant
+                                                          extra_status_refresh_rate">
     <ros2_control name="${name}" type="actuator">
       <hardware>
         <xacro:if value="${simulation}">
@@ -18,6 +20,10 @@
           <param name="torque_constant">${torque_constant}</param>
           <!-- Extra status refresh of the actuator -->
           <param name="extra_status_refresh_rate">${extra_status_refresh_rate}</param>
+          <!-- Low-pass filter constant for velocity -->
+          <param name="velocity_alpha">${velocity_alpha}</param>
+          <!-- Low-pass filter constant for effort -->
+          <param name="effort_alpha">${effort_alpha}</param>
         </xacro:unless>
       </hardware>
       <joint name="${joint_name}">
