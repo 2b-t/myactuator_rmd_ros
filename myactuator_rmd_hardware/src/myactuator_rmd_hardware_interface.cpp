@@ -2,11 +2,18 @@
 
 #include <atomic>
 #include <chrono>
+#include <fstream>
 #include <limits>
 #include <memory>
 #include <string>
 #include <thread>
 #include <vector>
+
+#if __has_include(<pthread.h>) && __has_include(<sched.h>)
+  #include <pthread.h>
+  #include <sched.h>
+  #define MYACTUATOR_RMD_HARDWARE__THREAD_PRIORITY
+#endif
 
 #include <hardware_interface/actuator_interface.hpp>
 #include <hardware_interface/handle.hpp>
@@ -376,6 +383,36 @@ namespace myactuator_rmd_hardware {
       RCLCPP_WARN(getLogger(), "Could not start command thread, command thread already running!");
       return false;
     }
+
+#ifdef MYACTUATOR_RMD_HARDWARE__THREAD_PRIORITY
+    std::ifstream realtime_file {"/sys/kernel/realtime", std::ios::in};
+    bool has_realtime {false};
+    if (realtime_file.is_open()) {
+      realtime_file >> has_realtime;
+    }
+
+    int policy {};
+    struct ::sched_param param {};
+    ::pthread_getschedparam(async_thread_.native_handle(), &policy, &param);
+    if (has_realtime) {
+      policy = SCHED_FIFO;
+      RCLCPP_INFO(getLogger(), "Real-time system detected: Setting policy to 'SCHED_FIFO'...");
+    }
+    int const max_thread_priority {::sched_get_priority_max(policy)};
+    if (max_thread_priority != -1) {
+      param.sched_priority = max_thread_priority;
+      if (::pthread_setschedparam(async_thread_.native_handle(), policy, &param) == 0) {
+        RCLCPP_INFO(getLogger(), "Set thread priority '%d' and policy '%d' to async thread!",
+          param.sched_priority, policy);
+      } else {
+        RCLCPP_WARN(getLogger(), "Failed to set thread priority '%d' and policy '%d' to async thread!",
+          param.sched_priority, policy);
+      }
+    } else {
+      RCLCPP_WARN(getLogger(), "Could not set thread priority to async thread: Failed to get max priority!");
+    }
+#endif  // MYACTUATOR_RMD_HARDWARE__THREAD_PRIORITY
+
     return true;
   }
 
