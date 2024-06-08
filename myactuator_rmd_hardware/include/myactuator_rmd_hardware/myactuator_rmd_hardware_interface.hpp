@@ -43,6 +43,8 @@ namespace myactuator_rmd_hardware {
   */
   class MyActuatorRmdHardwareInterface: public hardware_interface::ActuatorInterface {
     public:
+      RCLCPP_SHARED_PTR_DEFINITIONS(MyActuatorRmdHardwareInterface)
+      
       MyActuatorRmdHardwareInterface() = default;
       MyActuatorRmdHardwareInterface(MyActuatorRmdHardwareInterface const&) = default;
       MyActuatorRmdHardwareInterface& operator = (MyActuatorRmdHardwareInterface const&) = default;
@@ -66,6 +68,7 @@ namespace myactuator_rmd_hardware {
        * \return
        *    Value indicating success, error or failure of the callback
       */
+      MYACTUATOR_RMD_HARDWARE_PUBLIC
       CallbackReturn on_configure(rclcpp_lifecycle::State const& previous_state) override;
 
       /**\fn on_cleanup
@@ -78,6 +81,7 @@ namespace myactuator_rmd_hardware {
        * \return
        *    Value indicating success, error or failure of the callback
       */
+      MYACTUATOR_RMD_HARDWARE_PUBLIC
       CallbackReturn on_cleanup(rclcpp_lifecycle::State const& previous_state) override;
       
       /**\fn on_shutdown
@@ -90,6 +94,7 @@ namespace myactuator_rmd_hardware {
        * \return
        *    Value indicating success, error or failure of the callback
       */
+      MYACTUATOR_RMD_HARDWARE_PUBLIC
       CallbackReturn on_shutdown(rclcpp_lifecycle::State const& previous_state) override;
 
       /**\fn on_activate
@@ -102,6 +107,7 @@ namespace myactuator_rmd_hardware {
        * \return
        *    Value indicating success, error or failure of the callback
       */
+      MYACTUATOR_RMD_HARDWARE_PUBLIC
       CallbackReturn on_activate(rclcpp_lifecycle::State const& previous_state) override;
 
       /**\fn on_deactivate
@@ -114,6 +120,7 @@ namespace myactuator_rmd_hardware {
        * \return
        *    Value indicating success, error or failure of the callback
       */
+      MYACTUATOR_RMD_HARDWARE_PUBLIC
       CallbackReturn on_deactivate(rclcpp_lifecycle::State const& previous_state) override;
       
       /**\fn on_error
@@ -126,6 +133,7 @@ namespace myactuator_rmd_hardware {
        * \return
        *    Value indicating success, error or failure of the callback
       */
+      MYACTUATOR_RMD_HARDWARE_PUBLIC
       CallbackReturn on_error(rclcpp_lifecycle::State const& previous_state) override;
 
       /**\fn on_init
@@ -138,6 +146,7 @@ namespace myactuator_rmd_hardware {
        * \return
        *    Value indicating success, error or failure of the callback
       */
+      MYACTUATOR_RMD_HARDWARE_PUBLIC
       CallbackReturn on_init(hardware_interface::HardwareInfo const& info) override;
 
       /**\fn export_state_interfaces
@@ -147,6 +156,7 @@ namespace myactuator_rmd_hardware {
        * \return
        *    The state interfaces the actuator exposes
       */
+      MYACTUATOR_RMD_HARDWARE_PUBLIC
       std::vector<hardware_interface::StateInterface> export_state_interfaces() override;
 
       /**\fn export_command_interfaces
@@ -156,6 +166,7 @@ namespace myactuator_rmd_hardware {
        * \return
        *    The command interfaces the actuator exposes
       */
+      MYACTUATOR_RMD_HARDWARE_PUBLIC
       std::vector<hardware_interface::CommandInterface> export_command_interfaces() override;
 
       /**\fn prepare_command_mode_switch
@@ -169,6 +180,7 @@ namespace myactuator_rmd_hardware {
        * \return
        *    Value indicating success, error or failure of the callback
       */
+      MYACTUATOR_RMD_HARDWARE_PUBLIC
       hardware_interface::return_type prepare_command_mode_switch(std::vector<std::string> const& start_interfaces,
         std::vector<std::string> const& stop_interfaces) override;
 
@@ -183,6 +195,7 @@ namespace myactuator_rmd_hardware {
        * \return
        *    Value indicating success, error or failure of the callback
       */
+      MYACTUATOR_RMD_HARDWARE_PUBLIC
       hardware_interface::return_type perform_command_mode_switch(std::vector<std::string> const& start_interfaces,
         std::vector<std::string> const& stop_interfaces) override;
 
@@ -197,6 +210,7 @@ namespace myactuator_rmd_hardware {
        * \return
        *    Value indicating success, error or failure of the callback
       */
+      MYACTUATOR_RMD_HARDWARE_PUBLIC
       hardware_interface::return_type read(rclcpp::Time const& time, rclcpp::Duration const& period) override;
 
       /**\fn write
@@ -210,6 +224,7 @@ namespace myactuator_rmd_hardware {
        * \return
        *    Value indicating success, error or failure of the callback
       */
+      MYACTUATOR_RMD_HARDWARE_PUBLIC
       hardware_interface::return_type write(rclcpp::Time const& time, rclcpp::Duration const& period) override;
   
     protected:      
