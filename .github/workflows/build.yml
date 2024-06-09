@@ -32,7 +32,7 @@ jobs:
         run: |
           cd ~/colcon_ws
           source /ros_entrypoint.sh
-          sudo rosdep init
+          sudo rosdep init || true
           rosdep update
           rosdep install --from-paths src/ --ignore-src -r -y
       - name: Build workspace
