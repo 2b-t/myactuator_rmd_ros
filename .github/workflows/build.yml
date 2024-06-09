@@ -18,6 +18,9 @@ jobs:
         docker_image: ['ros:humble-ros-base', 'ros:iron-ros-base']
     container:
       image: ${{ matrix.docker_image }}
+    defaults:
+      run:
+        shell: bash
     steps:
       - name: Clone myactuator_rmd
         run: |
@@ -28,11 +31,12 @@ jobs:
       - name: Install dependencies
         run: |
           cd ~/colcon_ws
-          . /ros_entrypoint.sh
+          source /ros_entrypoint.sh
           rosdep install --from-paths src/ --ignore-src -r -y
       - name: Build workspace
         run: |
           cd ~/colcon_ws
-          . /ros_entrypoint.sh
+          source /ros_entrypoint.sh
           colcon build --symlink-install
+          source install/setup.bash
 
