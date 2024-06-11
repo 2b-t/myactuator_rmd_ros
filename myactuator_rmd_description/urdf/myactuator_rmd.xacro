@@ -9,8 +9,8 @@
     <inertial>
       <mass value="${m}"/>
       <origin xyz="${x} ${y} ${z}" rpy="0 0 0"/>
-      <inertia ixx="${1/12*m*height*height}" ixy="0.0" ixz="0.0"
-               iyy="${1/12*m*height*height}" iyz="0.0"
+      <inertia ixx="${1/12*m*(3*radius*radius+height*height)}" ixy="0.0" ixz="0.0"
+               iyy="${1/12*m*(3*radius*radius+height*height)}" iyz="0.0"
                izz="${1/2*m*radius*radius}"/>
     </inertial>
   </xacro:macro>
