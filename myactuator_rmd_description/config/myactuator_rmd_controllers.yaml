@@ -4,6 +4,9 @@ controller_manager:
 
     joint_state_broadcaster:
       type: joint_state_broadcaster/JointStateBroadcaster
+    
+    myactuator_rmd_state_broadcaster:
+      type: myactuator_rmd_state_broadcaster/MyActuatorRmdStateBroadcaster
 
     effort_controller:
       type: forward_command_controller/ForwardCommandController

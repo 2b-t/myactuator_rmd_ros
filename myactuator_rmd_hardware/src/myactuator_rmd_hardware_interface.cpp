@@ -35,7 +35,7 @@
 namespace myactuator_rmd_hardware {
 
   using CallbackReturn = MyActuatorRmdHardwareInterface::CallbackReturn;
-
+  
   MyActuatorRmdHardwareInterface::~MyActuatorRmdHardwareInterface() {
     // If the controller manager is shutdown with Ctrl + C the on_deactivate methods won't be called!
     // We therefore shut down the actuator here.
@@ -104,7 +104,6 @@ namespace myactuator_rmd_hardware {
       RCLCPP_FATAL(getLogger(), "Failed to start async thread!");
       return CallbackReturn::ERROR;
     }
-
     return CallbackReturn::SUCCESS;
   }
       
@@ -159,7 +158,14 @@ namespace myactuator_rmd_hardware {
     position_command_ = 0.0;
     velocity_command_ = 0.0;
     effort_command_ = 0.0;
-
+    extra_temperature_state_ = std::numeric_limits<double>::quiet_NaN();
+    extra_voltage_state_ = std::numeric_limits<double>::quiet_NaN();
+    extra_current_state_ = std::numeric_limits<double>::quiet_NaN();
+    extra_current_phase_a_state_ = std::numeric_limits<double>::quiet_NaN();
+    extra_current_phase_b_state_ = std::numeric_limits<double>::quiet_NaN();
+    extra_current_phase_c_state_ = std::numeric_limits<double>::quiet_NaN();
+    extra_brake_state_ = std::numeric_limits<double>::quiet_NaN();
+    extra_error_code_state_= std::numeric_limits<double>::quiet_NaN();
     position_interface_running_.store(false);
     velocity_interface_running_.store(false);
     effort_interface_running_.store(false);
@@ -213,6 +219,19 @@ namespace myactuator_rmd_hardware {
       return CallbackReturn::ERROR;
     }
 
+    if (info_.hardware_parameters.find("extra_status_refresh_rate") != info_.hardware_parameters.end()) {
+      extra_cycle_time_ = std::chrono::milliseconds(std::stoi(info_.hardware_parameters["extra_status_refresh_rate"]));
+    } else {
+      extra_cycle_time_ = std::chrono::milliseconds::zero();
+      RCLCPP_INFO(getLogger(), "Extra status refresh rate not set, defaulting to 0 milliseconds");
+    }
+    if (extra_cycle_time_ != std::chrono::milliseconds::zero()){
+      ExtraStatusIsUsed_ = true;
+    } else {
+      ExtraStatusIsUsed_ = false;
+      RCLCPP_INFO(getLogger(), "Extra status refresh rate is 0 milliseconds, it will not be implemented!");
+    }
+
     return CallbackReturn::SUCCESS;
   }
 
@@ -227,6 +246,33 @@ namespace myactuator_rmd_hardware {
     state_interfaces.emplace_back(hardware_interface::StateInterface(
       info_.joints.at(0).name, hardware_interface::HW_IF_EFFORT, &effort_state_)
     );
+    if (ExtraStatusIsUsed_) {
+      RCLCPP_INFO(getLogger(), "Extra Status set!");
+      state_interfaces.emplace_back(hardware_interface::StateInterface(
+        info_.joints.at(0).name, "rmd_temperature", &extra_temperature_state_)
+      );
+      state_interfaces.emplace_back(hardware_interface::StateInterface(
+        info_.joints.at(0).name, "rmd_voltage", &extra_voltage_state_)
+      );
+      state_interfaces.emplace_back(hardware_interface::StateInterface(
+        info_.joints.at(0).name, "rmd_current", &extra_current_state_)
+      );
+      state_interfaces.emplace_back(hardware_interface::StateInterface(
+        info_.joints.at(0).name, "rmd_current_phase_a", &extra_current_phase_a_state_)
+      );
+      state_interfaces.emplace_back(hardware_interface::StateInterface(
+        info_.joints.at(0).name, "rmd_current_phase_b", &extra_current_phase_b_state_)
+      );
+      state_interfaces.emplace_back(hardware_interface::StateInterface(
+        info_.joints.at(0).name, "rmd_current_phase_c", &extra_current_phase_c_state_)
+      );
+      state_interfaces.emplace_back(hardware_interface::StateInterface(
+        info_.joints.at(0).name, "rmd_error_code", &extra_error_code_state_)
+      );
+      state_interfaces.emplace_back(hardware_interface::StateInterface(
+        info_.joints.at(0).name, "rmd_brake", &extra_brake_state_)
+      );
+    }
     return state_interfaces;
   }
 
@@ -324,6 +370,16 @@ namespace myactuator_rmd_hardware {
     position_state_ = async_position_state_.load();
     velocity_state_ = async_velocity_state_.load();
     effort_state_ = async_effort_state_.load();
+    if (ExtraStatusIsUsed_) {
+      extra_temperature_state_ = static_cast<double>(motor_status1_.load().temperature);
+      extra_error_code_state_ = static_cast<double>(motor_status1_.load().error_code);
+      extra_brake_state_ = static_cast<double>(motor_status1_.load().is_brake_released);
+      extra_voltage_state_ = static_cast<double>(motor_status1_.load().voltage);
+      extra_current_state_ = static_cast<double>(feedback_.current);
+      extra_current_phase_a_state_ = static_cast<double>(motor_status3_.load().current_phase_a);
+      extra_current_phase_b_state_ = static_cast<double>(motor_status3_.load().current_phase_b);
+      extra_current_phase_c_state_ = static_cast<double>(motor_status3_.load().current_phase_c);
+    }
     return hardware_interface::return_type::OK;
   }
 
@@ -345,6 +401,7 @@ namespace myactuator_rmd_hardware {
   }
 
   void MyActuatorRmdHardwareInterface::asyncThread(std::chrono::milliseconds const& cycle_time) {
+    auto extra_wakeup_time {std::chrono::steady_clock::now() + extra_cycle_time_};
     while (!stop_async_thread_) {
       auto const now {std::chrono::steady_clock::now()};
       auto const wakeup_time {now + cycle_time};
@@ -371,6 +428,13 @@ namespace myactuator_rmd_hardware {
       async_velocity_state_.store(degToRad(velocity_state));
       async_effort_state_.store(currentToTorque(current_state, torque_constant_));
 
+      if (ExtraStatusIsUsed_){
+        if (extra_wakeup_time <= now){
+          motor_status1_ = actuator_interface_->getMotorStatus1();
+          motor_status3_ = actuator_interface_->getMotorStatus3();
+          extra_wakeup_time = (std::chrono::steady_clock::now() + extra_cycle_time_);
+        }
+      }
       std::this_thread::sleep_until(wakeup_time);
     }
     return;
@@ -425,7 +489,6 @@ namespace myactuator_rmd_hardware {
     }
     return;
   }
-
 }  // namespace myactuator_rmd_hardware
 
 #include <pluginlib/class_list_macros.hpp>

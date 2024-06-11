@@ -3,10 +3,11 @@
   <xacro:include filename="$(find myactuator_rmd_description)/urdf/myactuator_rmd.xacro"/>
 
   <!-- Provide dimensions for specific actuator -->
-  <xacro:macro name="X8ProV2" params="prefix joint_name simulation ifname actuator_id">
+  <xacro:macro name="X8ProV2" params="prefix joint_name simulation ifname actuator_id extra_status_refresh_rate">
     <xacro:myactuator_rmd prefix="${prefix}" joint_name="${joint_name}" simulation="${simulation}"
                           ifname="${ifname}" actuator_id="${actuator_id}"
                           velocity_alpha="0.1" effort_alpha="0.1"
+                          extra_status_refresh_rate="${extra_status_refresh_rate}"
                           torque_constant="2.6"
                           limit_effort="25.0" limit_lower="${-pi}" limit_upper="${pi}"
                           limit_velocity="${122/60*2*pi}"

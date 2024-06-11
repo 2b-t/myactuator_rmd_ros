@@ -280,9 +280,21 @@ namespace myactuator_rmd_hardware {
       std::unique_ptr<LowPassFilter> velocity_low_pass_filter_;
       std::unique_ptr<LowPassFilter> effort_low_pass_filter_;
 
+      // Buffer Extra status Actuator
+      double extra_error_code_state_;
+      double extra_temperature_state_;
+      double extra_brake_state_;
+      double extra_voltage_state_;
+      double extra_current_state_;
+      double extra_current_phase_a_state_;
+      double extra_current_phase_b_state_;
+      double extra_current_phase_c_state_;
+      
       // The command thread reads and writes from the actuator cyclically
       std::thread async_thread_;
       std::chrono::milliseconds cycle_time_;
+      std::chrono::milliseconds extra_cycle_time_;
+      bool ExtraStatusIsUsed_;
       // Never accessed by both threads at the same time
       std::unique_ptr<myactuator_rmd::CanDriver> driver_;
       std::unique_ptr<myactuator_rmd::ActuatorInterface> actuator_interface_;
@@ -292,6 +304,8 @@ namespace myactuator_rmd_hardware {
       
       std::atomic<double> async_position_state_;
       std::atomic<double> async_velocity_state_;
+      std::atomic<myactuator_rmd::MotorStatus1>motor_status1_;
+      std::atomic<myactuator_rmd::MotorStatus3>motor_status3_;
       std::atomic<double> async_effort_state_;
       std::atomic<double> async_position_command_;
       std::atomic<double> async_velocity_command_;

@@ -1,0 +1,28 @@
+myactuator_rmd_state_broadcaster:
+  use_local_topics: {
+    type: bool,
+    default_value: false,
+    description: "Defining if ``motor_states`` and ``dynamic_motor_states`` messages should be published into local namespace, e.g., ``/my_state_broadcaster/motor_states``."
+  }
+  motors: {
+    type: string_array,
+    default_value: [],
+    description: "Parameter to support broadcasting of only specific motors and interfaces.
+    It has to be used in combination with the ``interfaces`` parameter.
+    If either ``motors`` or ``interfaces`` is left empty, all available state interfaces will be
+    published.
+    Joint state broadcaster asks for access to all defined interfaces on all defined motors."
+  }
+  extra_motors: {
+    type: string_array,
+    default_value: [],
+    description: "Names of extra motors to be added to ``motor_states`` and ``dynamic_motor_states`` with state set to 0."
+  }
+  interfaces: {
+    type: string_array,
+    default_value: [],
+    description: "Parameter to support broadcasting of only specific motors and interfaces.
+    It has to be used in combination with the ``motors`` parameter.
+    If either ``motors`` or ``interfaces`` is left empty, all available state interfaces will be
+    published."
+  }

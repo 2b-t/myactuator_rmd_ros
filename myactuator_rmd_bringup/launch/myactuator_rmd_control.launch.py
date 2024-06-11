@@ -14,7 +14,7 @@ from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
 from launch.conditions import IfCondition, UnlessCondition
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import (
-    Command, FindExecutable, LaunchConfiguration, PathJoinSubstitution
+    Command, FindExecutable, LaunchConfiguration, PathJoinSubstitution, PythonExpression
 )
 from launch_ros.actions import Node
 
@@ -26,6 +26,8 @@ def generate_launch_description():
     actuator_id = LaunchConfiguration(actuator_id_parameter_name)
     ifname_parameter_name = 'ifname'
     ifname = LaunchConfiguration(ifname_parameter_name)
+    extra_status_refresh_rate_parameter_name = 'extra_status_refresh_rate'
+    extra_status_refresh_rate = LaunchConfiguration(extra_status_refresh_rate_parameter_name)
     controller_parameter_name = 'controller'
     controller = LaunchConfiguration(controller_parameter_name)
     rqt_controller_manager_parameter_name = 'rqt_controller_manager'
@@ -51,6 +53,11 @@ def generate_launch_description():
         ifname_parameter_name,
         default_value='can0',
         description='CAN interface name'
+    )
+    extra_status_refresh_rate_cmd = DeclareLaunchArgument(
+        extra_status_refresh_rate_parameter_name,
+        default_value='0',
+        description='Extra status refresh'
     )
     controller_cmd = DeclareLaunchArgument(
         controller_parameter_name,
@@ -92,7 +99,8 @@ def generate_launch_description():
             'actuator:=', actuator, ' ',
             'simulation:=', simulation, ' ',
             'ifname:=', ifname, ' ',
-            'actuator_id:=', actuator_id
+            'actuator_id:=', actuator_id, ' ',
+            'extra_status_refresh_rate:=', extra_status_refresh_rate
         ]
     )
     robot_description = {'robot_description': robot_description_content}
@@ -115,6 +123,12 @@ def generate_launch_description():
         package='controller_manager',
         executable='spawner',
         arguments=['joint_state_broadcaster', '--controller-manager', '/controller_manager']
+    )
+    myactuator_rmd_state_broadcaster_spawner_node = Node(
+        package='controller_manager',
+        executable='spawner',
+        arguments=['myactuator_rmd_state_broadcaster', '--controller-manager', '/controller_manager'],
+        condition=IfCondition(PythonExpression([extra_status_refresh_rate, ' != 0']))
     )
     controllers = PathJoinSubstitution(
         [
@@ -183,6 +197,7 @@ def generate_launch_description():
     ld.add_action(actuator_cmd)
     ld.add_action(actuator_id_cmd)
     ld.add_action(ifname_cmd)
+    ld.add_action(extra_status_refresh_rate_cmd)
     ld.add_action(controller_cmd)
     ld.add_action(rqt_controller_manager_cmd)
     ld.add_action(rqt_joint_trajectory_controller_cmd)
@@ -190,6 +205,7 @@ def generate_launch_description():
     ld.add_action(xacro_file_parameter_cmd)
     ld.add_action(description_launch)
     ld.add_action(joint_state_broadcaster_spawner_node)
+    ld.add_action(myactuator_rmd_state_broadcaster_spawner_node)
     ld.add_action(controller_manager_node)
     ld.add_action(controller_spawner_node)
     ld.add_action(gazebo_node)
