@@ -96,7 +96,9 @@ namespace myactuator_rmd_hardware {
       timeout_ = std::chrono::milliseconds(0);
       RCLCPP_INFO(getLogger(), "Timeout not set, defaulting to '%ld' ms", timeout_.count());
     }
-
+    if (timeout_ == std::chrono::milliseconds(0)) {
+      RCLCPP_INFO(getLogger(), "Timeout set to 0ms, it will not be used!");
+    }
     driver_ = std::make_unique<myactuator_rmd::CanDriver>(ifname_);
     actuator_interface_ = std::make_unique<myactuator_rmd::ActuatorInterface>(*driver_, actuator_id_);
     if (!actuator_interface_) {
