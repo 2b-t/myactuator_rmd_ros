@@ -31,6 +31,7 @@
 #include <rclcpp/time.hpp>
 #include <rclcpp_lifecycle/state.hpp>
 
+#include "myactuator_rmd_hardware/low_pass_filter.hpp"
 #include "myactuator_rmd_hardware/visibility_control.hpp"
 
 
@@ -42,6 +43,8 @@ namespace myactuator_rmd_hardware {
   */
   class MyActuatorRmdHardwareInterface: public hardware_interface::ActuatorInterface {
     public:
+      RCLCPP_SHARED_PTR_DEFINITIONS(MyActuatorRmdHardwareInterface)
+      
       MyActuatorRmdHardwareInterface() = default;
       MyActuatorRmdHardwareInterface(MyActuatorRmdHardwareInterface const&) = default;
       MyActuatorRmdHardwareInterface& operator = (MyActuatorRmdHardwareInterface const&) = default;
@@ -65,6 +68,7 @@ namespace myactuator_rmd_hardware {
        * \return
        *    Value indicating success, error or failure of the callback
       */
+      MYACTUATOR_RMD_HARDWARE_PUBLIC
       CallbackReturn on_configure(rclcpp_lifecycle::State const& previous_state) override;
 
       /**\fn on_cleanup
@@ -77,6 +81,7 @@ namespace myactuator_rmd_hardware {
        * \return
        *    Value indicating success, error or failure of the callback
       */
+      MYACTUATOR_RMD_HARDWARE_PUBLIC
       CallbackReturn on_cleanup(rclcpp_lifecycle::State const& previous_state) override;
       
       /**\fn on_shutdown
@@ -89,6 +94,7 @@ namespace myactuator_rmd_hardware {
        * \return
        *    Value indicating success, error or failure of the callback
       */
+      MYACTUATOR_RMD_HARDWARE_PUBLIC
       CallbackReturn on_shutdown(rclcpp_lifecycle::State const& previous_state) override;
 
       /**\fn on_activate
@@ -101,6 +107,7 @@ namespace myactuator_rmd_hardware {
        * \return
        *    Value indicating success, error or failure of the callback
       */
+      MYACTUATOR_RMD_HARDWARE_PUBLIC
       CallbackReturn on_activate(rclcpp_lifecycle::State const& previous_state) override;
 
       /**\fn on_deactivate
@@ -113,6 +120,7 @@ namespace myactuator_rmd_hardware {
        * \return
        *    Value indicating success, error or failure of the callback
       */
+      MYACTUATOR_RMD_HARDWARE_PUBLIC
       CallbackReturn on_deactivate(rclcpp_lifecycle::State const& previous_state) override;
       
       /**\fn on_error
@@ -125,6 +133,7 @@ namespace myactuator_rmd_hardware {
        * \return
        *    Value indicating success, error or failure of the callback
       */
+      MYACTUATOR_RMD_HARDWARE_PUBLIC
       CallbackReturn on_error(rclcpp_lifecycle::State const& previous_state) override;
 
       /**\fn on_init
@@ -137,6 +146,7 @@ namespace myactuator_rmd_hardware {
        * \return
        *    Value indicating success, error or failure of the callback
       */
+      MYACTUATOR_RMD_HARDWARE_PUBLIC
       CallbackReturn on_init(hardware_interface::HardwareInfo const& info) override;
 
       /**\fn export_state_interfaces
@@ -146,6 +156,7 @@ namespace myactuator_rmd_hardware {
        * \return
        *    The state interfaces the actuator exposes
       */
+      MYACTUATOR_RMD_HARDWARE_PUBLIC
       std::vector<hardware_interface::StateInterface> export_state_interfaces() override;
 
       /**\fn export_command_interfaces
@@ -155,6 +166,7 @@ namespace myactuator_rmd_hardware {
        * \return
        *    The command interfaces the actuator exposes
       */
+      MYACTUATOR_RMD_HARDWARE_PUBLIC
       std::vector<hardware_interface::CommandInterface> export_command_interfaces() override;
 
       /**\fn prepare_command_mode_switch
@@ -168,6 +180,7 @@ namespace myactuator_rmd_hardware {
        * \return
        *    Value indicating success, error or failure of the callback
       */
+      MYACTUATOR_RMD_HARDWARE_PUBLIC
       hardware_interface::return_type prepare_command_mode_switch(std::vector<std::string> const& start_interfaces,
         std::vector<std::string> const& stop_interfaces) override;
 
@@ -182,9 +195,10 @@ namespace myactuator_rmd_hardware {
        * \return
        *    Value indicating success, error or failure of the callback
       */
+      MYACTUATOR_RMD_HARDWARE_PUBLIC
       hardware_interface::return_type perform_command_mode_switch(std::vector<std::string> const& start_interfaces,
         std::vector<std::string> const& stop_interfaces) override;
-      
+
       /**\fn read
        * \brief
        *    Read the current state of the actuator
@@ -196,6 +210,7 @@ namespace myactuator_rmd_hardware {
        * \return
        *    Value indicating success, error or failure of the callback
       */
+      MYACTUATOR_RMD_HARDWARE_PUBLIC
       hardware_interface::return_type read(rclcpp::Time const& time, rclcpp::Duration const& period) override;
 
       /**\fn write
@@ -209,6 +224,7 @@ namespace myactuator_rmd_hardware {
        * \return
        *    Value indicating success, error or failure of the callback
       */
+      MYACTUATOR_RMD_HARDWARE_PUBLIC
       hardware_interface::return_type write(rclcpp::Time const& time, rclcpp::Duration const& period) override;
   
     protected:      
@@ -221,7 +237,7 @@ namespace myactuator_rmd_hardware {
       */
       static rclcpp::Logger getLogger();
 
-      /**\fn commandThread
+      /**\fn asyncThread
        * \brief
        *    The asynchronous command thread used to communicate with the hardware
        *    that performs a combined read and write
@@ -229,9 +245,9 @@ namespace myactuator_rmd_hardware {
        * \param[in] cycle_time
        *    The cycle time that the asynchronous thread should run at
       */
-      void commandThread(std::chrono::milliseconds const& cycle_time);
+      void asyncThread(std::chrono::milliseconds const& cycle_time);
 
-      /**\fn startCommandThread
+      /**\fn startAsyncThread
        * \brief
        *    Start the asynchronous command thread used to communicate with the hardware
        * 
@@ -241,13 +257,13 @@ namespace myactuator_rmd_hardware {
        *    Boolean variable indicating successful start of the async thread or failure
       */
       [[nodiscard]]
-      bool startCommandThread(std::chrono::milliseconds const& cycle_time);
+      bool startAsyncThread(std::chrono::milliseconds const& cycle_time);
       
-      /**\fn stopCommandThread
+      /**\fn stopAsyncThread
        * \brief
        *    Stop the asynchronous command thread used to communicate with the hardware
       */
-      void stopCommandThread();
+      void stopAsyncThread();
       
       std::string ifname_;
       std::uint32_t actuator_id_;
@@ -262,19 +278,25 @@ namespace myactuator_rmd_hardware {
       double position_command_;
       double velocity_command_;
       double effort_command_;
+      std::unique_ptr<LowPassFilter> velocity_low_pass_filter_;
+      std::unique_ptr<LowPassFilter> effort_low_pass_filter_;
 
       // The command thread reads and writes from the actuator cyclically
-      std::thread command_thread_;
+      std::thread async_thread_;
       std::chrono::milliseconds cycle_time_;
       // Never accessed by both threads at the same time
       std::unique_ptr<myactuator_rmd::CanDriver> driver_;
       std::unique_ptr<myactuator_rmd::ActuatorInterface> actuator_interface_;
+      myactuator_rmd::Feedback feedback_;
       // Shared between the two threads
-      std::atomic<bool> stop_command_thread_;
-      std::atomic<myactuator_rmd::Feedback> feedback_;
-      std::atomic<double> command_thread_position_;
-      std::atomic<double> command_thread_velocity_;
-      std::atomic<double> command_thread_effort_;
+      std::atomic<bool> stop_async_thread_;
+      
+      std::atomic<double> async_position_state_;
+      std::atomic<double> async_velocity_state_;
+      std::atomic<double> async_effort_state_;
+      std::atomic<double> async_position_command_;
+      std::atomic<double> async_velocity_command_;
+      std::atomic<double> async_effort_command_;
       std::atomic<bool> position_interface_running_;
       std::atomic<bool> velocity_interface_running_;
       std::atomic<bool> effort_interface_running_;

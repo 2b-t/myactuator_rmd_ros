@@ -1,0 +1,45 @@
+name: Build
+
+on:
+  push:
+    paths-ignore:
+      - '**.md'
+      - '**.png'
+      - '**.rviz'
+  schedule:
+    - cron: "0 12 1 * *"
+  workflow_dispatch:
+
+jobs:
+  build-workspace:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        docker_image: ['ros:humble-ros-base', 'ros:iron-ros-base']
+    container:
+      image: ${{ matrix.docker_image }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Clone myactuator_rmd
+        run: |
+          mkdir -p ~/colcon_ws/src
+          cd ~/colcon_ws/src
+          git clone https://github.com/2b-t/myactuator_rmd.git
+          git clone https://github.com/2b-t/myactuator_rmd_ros.git
+      - name: Install dependencies
+        run: |
+          cd ~/colcon_ws
+          source /ros_entrypoint.sh
+          sudo apt-get update
+          sudo rosdep init || true
+          rosdep update
+          rosdep install --from-paths src/ --ignore-src -r -y
+      - name: Build workspace
+        run: |
+          cd ~/colcon_ws
+          source /ros_entrypoint.sh
+          colcon build --symlink-install
+          source install/setup.bash
+
