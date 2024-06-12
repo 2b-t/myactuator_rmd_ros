@@ -87,14 +87,14 @@ namespace myactuator_rmd_hardware {
     if (info_.hardware_parameters.find("cycle_time") != info_.hardware_parameters.end()) {
       cycle_time_ = std::chrono::milliseconds(std::stol(info_.hardware_parameters["cycle_time"]));
     } else {
-      if (info_.hardware_parameters.find("timeout") != info_.hardware_parameters.end()) {
-      timeout_= std::chrono::milliseconds(int(std::stoi(info_.hardware_parameters["timeout"])));
+      cycle_time_ = std::chrono::milliseconds(1);
+      RCLCPP_INFO(getLogger(), "Cycle time not set, defaulting to '%ld' ms.", cycle_time_.count());
+    }
+    if (info_.hardware_parameters.find("timeout") != info_.hardware_parameters.end()) {
+      timeout_= std::chrono::milliseconds(std::stoi(info_.hardware_parameters["timeout"]));
     } else {
       timeout_ = std::chrono::milliseconds(0);
-      RCLCPP_INFO(getLogger(), "Timeout not set, defaulting to '%ld' milliseconds", timeout_.count());
-    }
-    cycle_time_ = std::chrono::milliseconds(1);
-      RCLCPP_INFO(getLogger(), "Cycle time not set, defaulting to '%ld' ms.", cycle_time_.count());
+      RCLCPP_INFO(getLogger(), "Timeout not set, defaulting to '%ld' ms", timeout_.count());
     }
 
     driver_ = std::make_unique<myactuator_rmd::CanDriver>(ifname_);
@@ -106,7 +106,6 @@ namespace myactuator_rmd_hardware {
     std::string const motor_model {actuator_interface_->getMotorModel()};
     RCLCPP_INFO(getLogger(), "Started actuator interface for actuator model '%s'!", motor_model.c_str());
     stop_async_thread_.store(false);
-    actuator_interface_->setTimeout(timeout_);
     if (!startAsyncThread(cycle_time_)) {
       RCLCPP_FATAL(getLogger(), "Failed to start async thread!");
       return CallbackReturn::ERROR;
@@ -352,6 +351,7 @@ namespace myactuator_rmd_hardware {
   }
 
   void MyActuatorRmdHardwareInterface::asyncThread(std::chrono::milliseconds const& cycle_time) {
+    actuator_interface_->setTimeout(timeout_);
     while (!stop_async_thread_) {
       auto const now {std::chrono::steady_clock::now()};
       auto const wakeup_time {now + cycle_time};
