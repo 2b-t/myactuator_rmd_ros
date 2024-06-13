@@ -20,6 +20,7 @@
                                              simulation ifname actuator_id
                                              velocity_alpha:=0.1 effort_alpha:=0.1
                                              torque_constant
+                                             timeout
                                              limit_effort limit_lower limit_upper
                                              limit_velocity
                                              visual
@@ -109,7 +110,7 @@
     <xacro:myactuator_rmd_ros2_control name="${prefix}${joint_name}_ros2_control" joint_name="${prefix}${joint_name}" simulation="${simulation}"
                                        ifname="${ifname}" actuator_id="${actuator_id}"
                                        velocity_alpha="${velocity_alpha}" effort_alpha="${effort_alpha}"
-                                       torque_constant="${torque_constant}"/>
+                                       torque_constant="${torque_constant}" timeout="${timeout}"/>
   </xacro:macro>
 
 </robot>

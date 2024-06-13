@@ -90,7 +90,15 @@ namespace myactuator_rmd_hardware {
       cycle_time_ = std::chrono::milliseconds(1);
       RCLCPP_INFO(getLogger(), "Cycle time not set, defaulting to '%ld' ms.", cycle_time_.count());
     }
-
+    if (info_.hardware_parameters.find("timeout") != info_.hardware_parameters.end()) {
+      timeout_= std::chrono::milliseconds(std::stoi(info_.hardware_parameters["timeout"]));
+    } else {
+      timeout_ = std::chrono::milliseconds(0);
+      RCLCPP_INFO(getLogger(), "Timeout not set, defaulting to '%ld' ms", timeout_.count());
+    }
+    if (timeout_ == std::chrono::milliseconds(0)) {
+      RCLCPP_INFO(getLogger(), "Timeout set to 0ms, it will not be used!");
+    }
     driver_ = std::make_unique<myactuator_rmd::CanDriver>(ifname_);
     actuator_interface_ = std::make_unique<myactuator_rmd::ActuatorInterface>(*driver_, actuator_id_);
     if (!actuator_interface_) {
@@ -345,6 +353,7 @@ namespace myactuator_rmd_hardware {
   }
 
   void MyActuatorRmdHardwareInterface::asyncThread(std::chrono::milliseconds const& cycle_time) {
+    actuator_interface_->setTimeout(timeout_);
     while (!stop_async_thread_) {
       auto const now {std::chrono::steady_clock::now()};
       auto const wakeup_time {now + cycle_time};
@@ -373,6 +382,7 @@ namespace myactuator_rmd_hardware {
 
       std::this_thread::sleep_until(wakeup_time);
     }
+    actuator_interface_->setTimeout(std::chrono::milliseconds(0));
     return;
   }
 

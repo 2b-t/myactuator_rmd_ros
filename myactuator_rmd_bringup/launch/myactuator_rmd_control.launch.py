@@ -34,6 +34,8 @@ def generate_launch_description():
     rqt_joint_trajectory_controller = LaunchConfiguration(rqt_joint_trajectory_controller_parameter_name)
     simulation_parameter_name = 'simulation'
     simulation = LaunchConfiguration(simulation_parameter_name)
+    timeout_parameter_name = 'timeout'
+    timeout = LaunchConfiguration(timeout_parameter_name) 
     xacro_file_parameter_name = 'xacro_file'
     xacro_file = LaunchConfiguration(xacro_file_parameter_name)
 
@@ -73,6 +75,11 @@ def generate_launch_description():
         default_value='true',
         description='Simulated or real hardware interface'
     )
+    timeout_cmd = DeclareLaunchArgument(
+        timeout_parameter_name,
+        default_value='0',
+        description='Timeout duration for the actuator operation'
+    )
     default_xacro_file = PathJoinSubstitution(
         [
             get_package_share_directory('myactuator_rmd_description'),
@@ -92,7 +99,8 @@ def generate_launch_description():
             'actuator:=', actuator, ' ',
             'simulation:=', simulation, ' ',
             'ifname:=', ifname, ' ',
-            'actuator_id:=', actuator_id
+            'actuator_id:=', actuator_id, ' ',
+            'timeout:=', timeout
         ]
     )
     robot_description = {'robot_description': robot_description_content}
@@ -187,6 +195,7 @@ def generate_launch_description():
     ld.add_action(rqt_controller_manager_cmd)
     ld.add_action(rqt_joint_trajectory_controller_cmd)
     ld.add_action(simulation_parameter_cmd)
+    ld.add_action(timeout_cmd)
     ld.add_action(xacro_file_parameter_cmd)
     ld.add_action(description_launch)
     ld.add_action(joint_state_broadcaster_spawner_node)

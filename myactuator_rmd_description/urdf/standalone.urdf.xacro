@@ -10,6 +10,8 @@
   <xacro:arg name="ifname" default=""/>
   <!-- CAN id for real hardware interface -->
   <xacro:arg name="actuator_id" default=""/>
+  <!-- Timeout duration for the actuator operation -->
+  <xacro:arg name="timeout" default="0"/>
 
   <!-- Define link names -->
   <xacro:property name="parent_link" value="world"/>
@@ -22,13 +24,15 @@
     <xacro:include filename="$(find myactuator_rmd_description)/urdf/X8ProV2.xacro"/>
     <xacro:X8ProV2 prefix="$(arg prefix)" joint_name="${joint_name}"
                    simulation="$(arg simulation)"
-                   ifname="$(arg ifname)" actuator_id="$(arg actuator_id)"/>
+                   ifname="$(arg ifname)" actuator_id="$(arg actuator_id)"
+                   timeout="$(arg timeout)"/>
   </xacro:if>
   <xacro:if value="${actuator_model == 'X12_150'}">
     <xacro:include filename="$(find myactuator_rmd_description)/urdf/X12_150.xacro"/>
     <xacro:X12_150 prefix="$(arg prefix)" joint_name="${joint_name}"
                    simulation="$(arg simulation)"
-                   ifname="$(arg ifname)" actuator_id="$(arg actuator_id)"/>
+                   ifname="$(arg ifname)" actuator_id="$(arg actuator_id)"
+                   timeout="$(arg timeout)"/>
   </xacro:if>
 
   <!-- Parent and child link and their fixed joints to the actuator -->
