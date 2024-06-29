@@ -87,7 +87,7 @@ namespace myactuator_rmd_hardware {
     if (info_.hardware_parameters.find("cycle_time") != info_.hardware_parameters.end()) {
       cycle_time_ = std::chrono::milliseconds(std::stol(info_.hardware_parameters["cycle_time"]));
     } else {
-      cycle_time_ = std::chrono::milliseconds(1);
+      cycle_time_ = std::chrono::milliseconds(2);
       RCLCPP_INFO(getLogger(), "Cycle time not set, defaulting to '%ld' ms.", cycle_time_.count());
     }
     if (info_.hardware_parameters.find("timeout") != info_.hardware_parameters.end()) {
