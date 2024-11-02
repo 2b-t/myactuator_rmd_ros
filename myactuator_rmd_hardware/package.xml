@@ -7,7 +7,7 @@
   <maintainer email="tobit.flatscher@outlook.com">Tobit Flatscher</maintainer>
   <license>MIT</license>
 
-  <buildtool_depend>ament_cmake_ros</buildtool_depend>
+  <buildtool_depend>ament_cmake</buildtool_depend>
 
   <depend>hardware_interface</depend>
   <depend>myactuator_rmd</depend>
