@@ -12,7 +12,7 @@ find_package(pluginlib REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclcpp_lifecycle REQUIRED)
 
-add_library(${PROJECT_NAME}
+add_library(${PROJECT_NAME} SHARED
   src/myactuator_rmd_hardware_interface.cpp
 )
 target_compile_features(${PROJECT_NAME} PUBLIC
