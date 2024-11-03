@@ -26,7 +26,9 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
   MYACTUATOR_RMD_HARDWARE_BUILDING_LIBRARY
 )
 # Required for std::atomic
-target_link_libraries(${PROJECT_NAME} -latomic)
+target_link_libraries(${PROJECT_NAME}
+  atomic
+)
 ament_target_dependencies(${PROJECT_NAME}
   hardware_interface
   myactuator_rmd
@@ -38,20 +40,17 @@ ament_target_dependencies(${PROJECT_NAME}
 pluginlib_export_plugin_description_file(hardware_interface
   myactuator_rmd_hardware.xml
 )
-install(
-  DIRECTORY include/
-  DESTINATION include
+install(DIRECTORY include/
+  DESTINATION include/${PROJECT_NAME}
 )
-install(
-  TARGETS ${PROJECT_NAME}
+install(TARGETS ${PROJECT_NAME}
   EXPORT export_${PROJECT_NAME}
   ARCHIVE DESTINATION lib
   LIBRARY DESTINATION lib
   RUNTIME DESTINATION bin
 )
 
-ament_export_targets(
-  export_${PROJECT_NAME}
+ament_export_targets(export_${PROJECT_NAME}
   HAS_LIBRARY_TARGET
 )
 ament_package()
