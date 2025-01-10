@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        docker_image: ['ros:humble-ros-base', 'ros:iron-ros-base']
+        docker_image: ['ros:humble-ros-base', 'ros:jazzy-ros-base']
     container:
       image: ${{ matrix.docker_image }}
     defaults:
